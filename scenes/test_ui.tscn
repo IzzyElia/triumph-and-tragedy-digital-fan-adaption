@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://b7bqami6jvgop"]
+
+[ext_resource type="Script" uid="uid://caw46db7bbkvr" path="res://src/GlobalSingletons/GameController.cs" id="1_lc104"]
+[ext_resource type="Script" uid="uid://cnnflyxg1n3qm" path="res://src/libraries/IzzysUI/src/IzzysUIController.cs" id="2_hfxbw"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GameController" type="Node" parent="."]
+script = ExtResource("1_lc104")
+_loggingContexts = Array[int]([1])
+
+[node name="IzzysUIController" type="Node" parent="." node_paths=PackedStringArray("_contextWindowParentControl")]
+script = ExtResource("2_hfxbw")
+_contextWindowParentControl = NodePath("..")

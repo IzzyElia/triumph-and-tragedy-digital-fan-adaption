@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://dwodlyka465u"]
+
+[ext_resource type="Script" uid="uid://cop2tprtqjxsv" path="res://src/UI/ObjectSelector/UIObjectSelectionLink.cs" id="1_3bx7m"]
+[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://Resources/LabelSettings.tres" id="2_wi81c"]
+
+[node name="Selection Link" type="PanelContainer" node_paths=PackedStringArray("_button", "_label")]
+mouse_default_cursor_shape = 2
+script = ExtResource("1_3bx7m")
+_button = NodePath("Button")
+_label = NodePath("Label")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "Further reading"
+label_settings = ExtResource("2_wi81c")

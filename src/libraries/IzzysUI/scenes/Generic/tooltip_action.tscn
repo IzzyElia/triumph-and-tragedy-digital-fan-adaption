@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://m20mep2qxn2j"]
+
+[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://Resources/LabelSettings.tres" id="1_k7uff"]
+[ext_resource type="Script" uid="uid://dht27hgm5d8qu" path="res://src/UI/UIActionController.cs" id="1_xd0wa"]
+
+[node name="Tooltip Action" type="PanelContainer" node_paths=PackedStringArray("_button", "_label")]
+mouse_filter = 1
+script = ExtResource("1_xd0wa")
+_button = NodePath("Button")
+_label = NodePath("Label")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "Action"
+label_settings = ExtResource("1_k7uff")
