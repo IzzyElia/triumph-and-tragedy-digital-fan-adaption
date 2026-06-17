@@ -7,10 +7,8 @@
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="src\libraries\IzzysUI\README.md" />
-    <Content Include="src\libraries\NetworkedBoardGameEntitySystem\README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="src\Game\Behaviors\" />
+    <Content Include="src\Libraries\IzzysUI\README.md" />
+    <Content Include="src\Libraries\NetworkedBoardGameEntitySystem\ISSUES.md" />
+    <Content Include="src\Libraries\NetworkedBoardGameEntitySystem\README.md" />
   </ItemGroup>
 </Project>
