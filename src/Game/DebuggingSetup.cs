@@ -1,6 +1,8 @@
 using System;
 using Godot;
 using TT2026.Game.Rendering;
+using TT2026.libraries.IzzysConsole.API;
+using TT2026.libraries.IzzysConsole.Internal;
 using TT2026.libraries.NetworkedBoardGameEntitySystem;
 
 namespace TT2026.Game;
@@ -13,6 +15,7 @@ public partial class DebuggingSetup : Node
 
     public override void _Ready()
     {
+        CommandRegistry.Initialize();
         GameState.LoadTypesFromCurrentAssembly();
         
         if (_numClients == 0 || _port == 0 || _rendererPrefab == null)

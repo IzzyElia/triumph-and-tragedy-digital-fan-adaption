@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0atc27i1pr71"]
+
+[ext_resource type="Shader" uid="uid://h36wc0f3bp5e" path="res://src/Libraries/NetworkedBoardGameEntitySystem/Rendering/tile_shader.gdshader" id="1_eoo1b"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_4nhb1"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ihrbl"]
+render_priority = 0
+shader = ExtResource("1_eoo1b")
+shader_parameter/tile_mask = 0
+shader_parameter/border_color = Color(0.5449743, 0.54497427, 0.54497427, 1)
+shader_parameter/alt_border_color = Color(0.18, 0.18, 0.18, 1)
+shader_parameter/albedo_color = Color(1, 1, 1, 1)
+shader_parameter/water_color = Color(0.2078839, 0.3275328, 0.6297772, 1)
+shader_parameter/border_thickness = 0.106000005035
+shader_parameter/alt_border_thickness = 0.12
+shader_parameter/river_border_blend = 0.5
+shader_parameter/terrain_uv_scale = 1.0
+
+[node name="TestTile" type="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, -0.02437979, 0.9997028, 0, -0.9997028, -0.02437979, 0, 0, 0)
+mesh = SubResource("QuadMesh_4nhb1")
+surface_material_override/0 = SubResource("ShaderMaterial_ihrbl")

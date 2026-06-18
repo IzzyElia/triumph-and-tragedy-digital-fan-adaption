@@ -1,0 +1,27 @@
+[gd_scene load_steps=7 format=3 uid="uid://divfuioy1iisg"]
+
+[ext_resource type="Script" uid="uid://cb60dfbtx6kkd" path="res://src/Game/Rendering/TTRenderer_Editor.cs" id="1_vjraf"]
+[ext_resource type="Material" uid="uid://ptuk1btjbv78" path="res://scenes/Renderer/tile_material.tres" id="2_c34sv"]
+[ext_resource type="Texture2D" uid="uid://bp0guhurgx167" path="res://map tracing images/tracing_world_1936.jpg" id="2_y3ksa"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_y3ksa"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_c34sv"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fxrs6"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.39215687)
+albedo_texture = ExtResource("2_y3ksa")
+
+[node name="Renderer" type="Node3D" node_paths=PackedStringArray("_tracingImage")]
+script = ExtResource("1_vjraf")
+_tracingImage = NodePath("TracingImage")
+Width = 256
+Height = 128
+_tileMesh = SubResource("QuadMesh_y3ksa")
+_tileMaterial = ExtResource("2_c34sv")
+
+[node name="TracingImage" type="MeshInstance3D" parent="."]
+transform = Transform3D(512, 0, 0, 0, -1.1190115e-05, 1, 0, -256, -4.371139e-08, 256, 1, 128)
+mesh = SubResource("QuadMesh_c34sv")
+surface_material_override/0 = SubResource("StandardMaterial3D_fxrs6")

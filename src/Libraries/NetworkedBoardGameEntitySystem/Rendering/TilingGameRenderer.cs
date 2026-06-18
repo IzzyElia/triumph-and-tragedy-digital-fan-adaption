@@ -13,10 +13,10 @@ namespace TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
 /// </summary>
 public abstract partial class TilingGameRenderer : GameRenderer
 {
-    [Export] private int _width;
-    [Export] private int _height;
+    [Export] public int Width { get; private set; }
+    [Export] public int Height { get; private set; }
     [Export] private QuadMesh _tileMesh;
-    [Export] private StandardMaterial3D _tileMaterial;
+    [Export] private ShaderMaterial _tileMaterial;
 
     private MeshInstance3D[] _tiles;
     private Dictionary<ICoordinate2d, int> _tileIDByCoordinate = new ();
@@ -24,15 +24,15 @@ public abstract partial class TilingGameRenderer : GameRenderer
     public override void Initialize()
     {
         RandomNumberGenerator random = new();
-        if (_width == 0 || _height == 0 || _tileMesh is null || _tileMaterial is null)
+        if (Width == 0 || Height == 0 || _tileMesh is null || _tileMaterial is null)
         {
             throw new ArgumentException($"Not all TilingGameRenderer fields have been set up");
         }
         
-        _tiles = new MeshInstance3D[_width * _height];
+        _tiles = new MeshInstance3D[Width * Height];
         int i = 0;
-        for (int x = 0; x < _width; x++)
-            for (int y = 0; y < _height; y++)
+        for (int x = 0; x < Width; x++)
+            for (int y = 0; y < Height; y++)
             {
                 _tileIDByCoordinate.Add(new SquareCoordinate(x, y), i);
                 
@@ -41,15 +41,15 @@ public abstract partial class TilingGameRenderer : GameRenderer
                 AddChild(meshInstance);
                 meshInstance.SetPosition(new Vector3(x, 0, y));
                 meshInstance.SetMesh(_tileMesh);
-                StandardMaterial3D material = (StandardMaterial3D)_tileMaterial.Duplicate();
-                material.AlbedoColor = new Color(random.Randf(), random.Randf(), random.Randf());
+                var material = (ShaderMaterial)_tileMaterial.Duplicate();
+                material.SetShaderParameter("albedo_color", Colors.Transparent);
                 meshInstance.SetSurfaceOverrideMaterial(0, material);
                 meshInstance.SetRotationDegrees(new Vector3(-90, 0, 0));
                 i++;
             }
     }
     
-    protected abstract void OnTileClicked(int x, int y);
+    protected abstract void OnTileClicked(ICoordinate2d tileCoordinate, TileClickMetadata input);
 
     public override void FullRefresh()
     {
@@ -62,6 +62,12 @@ public abstract partial class TilingGameRenderer : GameRenderer
     {
         return _tiles[_tileIDByCoordinate[coordinate]];
     }
+
+    public Vector2 GetTilePositionInViewport(int tileId)
+    {
+        Vector3 tilePosition = _tiles[tileId].GlobalPosition;
+        return CameraController.Camera.UnprojectPosition(tilePosition);
+    }
     
     public int GetTileId(ICoordinate2d coordinate) => _tileIDByCoordinate[coordinate];
 
@@ -72,11 +78,21 @@ public abstract partial class TilingGameRenderer : GameRenderer
             if (mouseButton.Pressed && mouseButton.ButtonIndex == MouseButton.Left)
             {
                 Vector2 clickPosition = CameraController.RaycastFromScreenToGameMap(CameraController.Camera.GetViewport().GetMousePosition());
-                int roundedX = Mathf.Clamp(Mathf.RoundToInt(clickPosition.X), 0,  _width - 1);
-                int roundedY = Mathf.Clamp(Mathf.RoundToInt(clickPosition.Y), 0, _height - 1);
+                int roundedX = Mathf.Clamp(Mathf.RoundToInt(clickPosition.X), 0,  Width - 1);
+                int roundedY = Mathf.Clamp(Mathf.RoundToInt(clickPosition.Y), 0, Height - 1);
                 
-                OnTileClicked(roundedX, roundedY);
+                OnTileClicked(new SquareCoordinate(roundedX, roundedY), new TileClickMetadata()
+                {
+                    ShiftHeld = mouseButton.ShiftPressed,
+                    CtrlHeld = mouseButton.CtrlPressed,
+                });
             }
         }
+    }
+
+    protected struct TileClickMetadata
+    {
+        public bool ShiftHeld { get; set; }
+        public bool CtrlHeld { get; set; }
     }
 }

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dirh72lyyk775"]
 
-[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://src/libraries/IzzysUI/LabelSettings.tres" id="1_7g4tm"]
-[ext_resource type="Script" uid="uid://420o67qo4url" path="res://src/libraries/IzzysUI/src/Tooltips/ContextWindowLinkController.cs" id="1_fdvg8"]
+[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://src/Libraries/IzzysUI/LabelSettings.tres" id="1_7g4tm"]
+[ext_resource type="Script" uid="uid://420o67qo4url" path="res://src/Libraries/IzzysUI/src/Tooltips/ContextWindowLinkController.cs" id="1_fdvg8"]
 
 [node name="Further Reading" type="PanelContainer" node_paths=PackedStringArray("_button", "_label")]
 mouse_default_cursor_shape = 2
@@ -11,7 +11,6 @@ _label = NodePath("Label")
 
 [node name="Button" type="Button" parent="."]
 layout_mode = 2
-mouse_filter = 1
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 2

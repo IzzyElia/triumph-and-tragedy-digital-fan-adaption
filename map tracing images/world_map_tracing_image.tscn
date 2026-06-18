@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://enyw5a15wh3g"]
+
+[ext_resource type="Texture2D" uid="uid://bp0guhurgx167" path="res://map tracing images/tracing_world_1936.jpg" id="1_eg7lm"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_2t6g7"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_37xhe"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.39215687)
+albedo_texture = ExtResource("1_eg7lm")
+
+[node name="TracingImage" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(512, 0, 0, 0, -1.1190115e-05, 1, 0, -256, -4.371139e-08, 256, 0.1, 128)
+mesh = SubResource("QuadMesh_2t6g7")
+surface_material_override/0 = SubResource("StandardMaterial3D_37xhe")

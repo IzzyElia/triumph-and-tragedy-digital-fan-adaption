@@ -9,9 +9,10 @@ public abstract class EntityGameData
 {
     private GameEntity _entity;
     public string Key { get; private set; }
+
     private string _currentSerializedState;
     private int _showingAtStateId = -1;
-    private List<DataHistoryFrame> _historyFrames = new ();
+    public List<DataHistoryFrame> __HistoryFrames = new ();
     
     protected EntityGameData(GameEntity gameEntity, string variableKey)
     {
@@ -40,27 +41,27 @@ public abstract class EntityGameData
                     "Tried to call CommitState() from the client (CommitState() is for confirming changes on the server)");
             string currentSerializedState = SerializeData();
             var frame = new DataHistoryFrame(gameStepId, currentSerializedState);
-            if (_historyFrames.Count == 0)
+            if (__HistoryFrames.Count == 0)
             {
-                _historyFrames.Add(frame);
+                __HistoryFrames.Add(frame);
                 NotifyEntityStateChanged();
                 ((ServerGameState)_entity.GameState).Server.PushUpdate(
                     new EntityVariableUpdatePacket(gameStepId, _entity, Key, currentSerializedState));
                 return;
             }
 
-            if (_historyFrames.Last().Data != currentSerializedState)
+            if (__HistoryFrames.Last().Data != currentSerializedState)
             {
-                if (gameStepId > _historyFrames[^1].GameStepID)
+                if (gameStepId > __HistoryFrames[^1].GameStepID)
                 {
-                    _historyFrames.Add(frame);
+                    __HistoryFrames.Add(frame);
                     NotifyEntityStateChanged();
                     ((ServerGameState)_entity.GameState).Server.PushUpdate(
                         new EntityVariableUpdatePacket(gameStepId, _entity, Key, currentSerializedState));
                 }
-                else if (gameStepId == _historyFrames[^1].GameStepID)
+                else if (gameStepId == __HistoryFrames[^1].GameStepID)
                 {
-                    _historyFrames[^1] = frame;
+                    __HistoryFrames[^1] = frame;
                 }
                 else
                     throw
@@ -70,7 +71,7 @@ public abstract class EntityGameData
         }
     }
     
-    public void ForceSetValue(string serializedValue, int gameStepId)
+    public void ForceSetValue(string serializedValue, int gameStepId, bool push = true)
     {
         if (!_entity.GameState.IsServerSide) throw new InvalidOperationException($"ForceSetValue should be called on the server only");
         lock (_entity.GameState.NetworkManager.Mutex)
@@ -79,32 +80,35 @@ public abstract class EntityGameData
 
             var frame = new DataHistoryFrame(gameStepId, serializedValue);
 
-            for (int i = 0; i < _historyFrames.Count; i++)
+            for (int i = 0; i < __HistoryFrames.Count; i++)
             {
-                if (_historyFrames[i].GameStepID == gameStepId)
+                if (__HistoryFrames[i].GameStepID == gameStepId)
                 {
                     // Same step already recorded — overwrite it.
-                    _historyFrames[i] = frame;
+                    __HistoryFrames[i] = frame;
+                    RefreshState();
                     NotifyEntityStateChanged();
-                    ((ServerGameState)_entity.GameState).Server.PushUpdate(
+                    if (push) ((ServerGameState)_entity.GameState).Server.PushUpdate(
                         new EntityVariableUpdatePacket(gameStepId, _entity, Key, serializedValue));
                     return;
                 }
-                else if (_historyFrames[i].GameStepID > gameStepId)
+                else if (__HistoryFrames[i].GameStepID > gameStepId)
                 {
                     // First frame that belongs after the new one — insert before it.
-                    _historyFrames.Insert(i, frame);
+                    __HistoryFrames.Insert(i, frame);
+                    RefreshState();
                     NotifyEntityStateChanged();
-                    ((ServerGameState)_entity.GameState).Server.PushUpdate(
+                    if (push) ((ServerGameState)_entity.GameState).Server.PushUpdate(
                         new EntityVariableUpdatePacket(gameStepId, _entity, Key, serializedValue));
                     return;
                 }
             }
 
             // New step is greater than everything (or the list was empty) — append.
-            _historyFrames.Add(frame);
+            __HistoryFrames.Add(frame);
+            RefreshState();
             NotifyEntityStateChanged();
-            ((ServerGameState)_entity.GameState).Server.PushUpdate(
+            if (push) ((ServerGameState)_entity.GameState).Server.PushUpdate(
                 new EntityVariableUpdatePacket(gameStepId, _entity, Key, serializedValue));
             return;
         }
@@ -118,26 +122,26 @@ public abstract class EntityGameData
             
             var frame = new DataHistoryFrame(updatePacket.GameStepId, updatePacket.VariableValue);
             Logger.Log($"Applying update to entity #{updatePacket.EntityId} ({_entity.GetType().Name}): {updatePacket.VariableName} = {updatePacket.VariableValue} at step {updatePacket.GameStepId}");
-            for (int i = 0; i < _historyFrames.Count; i++)
+            for (int i = 0; i < __HistoryFrames.Count; i++)
             {
-                if (_historyFrames[i].GameStepID == updatePacket.GameStepId)
+                if (__HistoryFrames[i].GameStepID == updatePacket.GameStepId)
                 {
                     // Same step already recorded — overwrite it.
-                    _historyFrames[i] = frame;
+                    __HistoryFrames[i] = frame;
                     RefreshState();
                     return EntityUpdatePacketApplyError.AllGroovy;
                 }
-                else if (_historyFrames[i].GameStepID > updatePacket.GameStepId)
+                else if (__HistoryFrames[i].GameStepID > updatePacket.GameStepId)
                 {
                     // First frame that belongs after the new one — insert before it.
-                    _historyFrames.Insert(i, frame);
+                    __HistoryFrames.Insert(i, frame);
                     RefreshState();
                     return EntityUpdatePacketApplyError.AllGroovy;
                 }
             }
 
             // New step is greater than everything (or the list was empty) — append.
-            _historyFrames.Add(frame);
+            __HistoryFrames.Add(frame);
             RefreshState();
             return EntityUpdatePacketApplyError.AllGroovy;
         }
@@ -158,7 +162,7 @@ public abstract class EntityGameData
             int gameStepId = _showingAtStateId == -1 ? _entity.GameState.GameStepID : _showingAtStateId;
             string frameData;
             // If the first frame is beyond the one we are searching for, the data doesn't exist yet
-            if (_historyFrames.Count == 0 || _historyFrames[0].GameStepID > gameStepId)
+            if (__HistoryFrames.Count == 0 || __HistoryFrames[0].GameStepID > gameStepId)
             {
                 DeserializeDataAndSetStateToIt(null);
                 if (_currentSerializedState != null) NotifyEntityStateChanged();
@@ -166,20 +170,20 @@ public abstract class EntityGameData
                 return;
             }
 
-            for (int i = 0; i < _historyFrames.Count; i++)
+            for (int i = 0; i < __HistoryFrames.Count; i++)
             {
-                if (_historyFrames[i].GameStepID == gameStepId)
+                if (__HistoryFrames[i].GameStepID == gameStepId)
                 {
-                    frameData = _historyFrames[i].Data;
+                    frameData = __HistoryFrames[i].Data;
                     
                     DeserializeDataAndSetStateToIt(frameData); 
                     if (frameData != _currentSerializedState) NotifyEntityStateChanged();
                     _currentSerializedState = frameData;
                     return;
                 }
-                else if (_historyFrames[i].GameStepID > gameStepId)
+                else if (__HistoryFrames[i].GameStepID > gameStepId)
                 {
-                    frameData = _historyFrames[i-1].Data;
+                    frameData = __HistoryFrames[i-1].Data;
                     DeserializeDataAndSetStateToIt(frameData);
                     if (frameData != _currentSerializedState) NotifyEntityStateChanged();
                     _currentSerializedState = frameData;
@@ -187,7 +191,7 @@ public abstract class EntityGameData
                 }
             }
 
-            frameData = _historyFrames[^1].Data;
+            frameData = __HistoryFrames[^1].Data;
             DeserializeDataAndSetStateToIt(frameData);
             if (frameData != _currentSerializedState) NotifyEntityStateChanged();
             _currentSerializedState = frameData;
@@ -198,7 +202,7 @@ public abstract class EntityGameData
     {
         lock (_entity.GameState.NetworkManager.Mutex)
         {
-            foreach (var historyFrame in _historyFrames)
+            foreach (var historyFrame in __HistoryFrames)
             {
                 yield return new EntityVariableUpdatePacket(
                     gameStepId: historyFrame.GameStepID,
@@ -222,7 +226,7 @@ public abstract class EntityGameData
         unchecked
         {
             int hash = 0;
-            foreach (var frame in _historyFrames)
+            foreach (var frame in __HistoryFrames)
             {
                 hash += Utils.Mix32Hash(frame.GameStepID) * Utils.Fnv1AHash(frame.Data) * 17;
             }

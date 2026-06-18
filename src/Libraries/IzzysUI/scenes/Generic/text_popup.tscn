@@ -1,0 +1,101 @@
+[gd_scene load_steps=3 format=3 uid="uid://csbee5jmj3v6x"]
+
+[ext_resource type="Script" uid="uid://blpqhfvrp346m" path="res://src/Libraries/IzzysUI/src/Popups/TextPopupController.cs" id="1_w63h2"]
+[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://src/Libraries/IzzysUI/LabelSettings.tres" id="2_80m6l"]
+
+[node name="TextPopup" type="Control" node_paths=PackedStringArray("_lineEdit", "_cancelButton", "_okButton", "_popupHeader")]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -246.5
+offset_top = -113.0
+offset_right = 246.5
+offset_bottom = 113.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_w63h2")
+_lineEdit = NodePath("LineEdit")
+_cancelButton = NodePath("HBoxContainer/Cancel")
+_okButton = NodePath("HBoxContainer/Ok")
+_popupHeader = NodePath("Popup Header")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Popup Header" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.28300002
+offset_bottom = 10.108448
+text = "Enter Text"
+label_settings = ExtResource("2_80m6l")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.040000003
+anchor_top = 0.34100002
+anchor_right = 0.96000004
+anchor_bottom = 0.75900006
+offset_top = -0.057998657
+offset_right = -6.1035156e-05
+offset_bottom = -6.5700073
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 22
+alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0020001
+anchor_bottom = 1.0
+offset_top = -45.0
+offset_right = -0.06402588
+offset_bottom = 3.2880096
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Cancel" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="HBoxContainer/Cancel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Cancel"
+label_settings = ExtResource("2_80m6l")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Ok" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="HBoxContainer/Ok"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Ok"
+label_settings = ExtResource("2_80m6l")
+horizontal_alignment = 1
+vertical_alignment = 1

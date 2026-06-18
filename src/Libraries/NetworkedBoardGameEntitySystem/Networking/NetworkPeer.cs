@@ -37,7 +37,7 @@ public abstract class NetworkPeer : INetEventListener
             {
                 foreach (var requestCallbackId in _deadRequests)
                 {
-                    SentRequest originalRequest =  SentRequests[requestCallbackId];
+                    SentRequest originalRequest = SentRequests[requestCallbackId];
                     SentRequests.Remove(requestCallbackId);
                     if (originalRequest.Destination.ConnectionState == ConnectionState.Connected)
                         originalRequest.Destination.Disconnect();
@@ -56,7 +56,7 @@ public abstract class NetworkPeer : INetEventListener
             string payloadJson = JsonSerializer.Serialize(payload, payload.GetType());
             string packetJson = JsonSerializer.Serialize(new JsonPacket(type: payload.GetType().Name, payloadJson, callbackId));
             _dataWriter.Put(packetJson);
-            destination.Send(_dataWriter, DeliveryMethod.ReliableUnordered);
+            destination.Send(_dataWriter, DeliveryMethod.ReliableOrdered);
         }
     }
     
@@ -65,6 +65,7 @@ public abstract class NetworkPeer : INetEventListener
     {
         lock (Mutex)
         {
+            if (destination is null) throw new ArgumentNullException(nameof(destination));
             int callbackId = _random.Next();
             while (SentRequests.ContainsKey(callbackId) || callbackId == 0) callbackId = _random.Next();
             SentRequests.Add(callbackId, new SentRequest(destination, networkRequest, callbackId));
@@ -89,7 +90,7 @@ public abstract class NetworkPeer : INetEventListener
         return sentRequest.TCS.Task.Result;
     }
 
-    protected abstract NetworkResponse? ReceiveJsonPacket(JsonPacket jsonPacket);
+    protected abstract NetworkResponse? ReceiveJsonPacket(NetPeer sender, JsonPacket jsonPacket);
     protected abstract void ReceiveCallback(INetworkRequest originalRequest, NetworkResponse response);
     
     public abstract void OnPeerConnected(NetPeer peer);
@@ -137,7 +138,7 @@ public abstract class NetworkPeer : INetEventListener
                 NetworkResponse? outgoingResponse;
                 try
                 {
-                    outgoingResponse = ReceiveJsonPacket(jsonPacket);
+                    outgoingResponse = ReceiveJsonPacket(peer, jsonPacket);
                 }
                 catch (BadPacketException)
                 {

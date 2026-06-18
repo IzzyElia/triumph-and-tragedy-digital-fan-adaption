@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using TT2026.libraries.Izzy;
@@ -66,7 +67,8 @@ public abstract class GameState
     public T GetEntity<T>(int id) where T : GameEntity
     {
         if (id == -1) return null;
-        return EntitiesById[id] as T;
+        if (!EntitiesById.TryGetValue(id, out var entity)) return null;
+        return entity as T;
     }
 
     public IEnumerable<T> GetEntitiesOfType<T>() where T : GameEntity

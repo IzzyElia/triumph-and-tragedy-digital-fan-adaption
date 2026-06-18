@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://43rtxfk2uyp6"]
+
+[ext_resource type="Script" uid="uid://dcys02wcfv08o" path="res://src/IzzysConsole/UIConsoleController.cs" id="1_vjr70"]
+
+[node name="Console" type="Control" node_paths=PackedStringArray("_mainPanel", "_textEdit", "_logDisplay")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vjr70")
+_mainPanel = NodePath("Panel")
+_textEdit = NodePath("Panel/Panel/TextEdit")
+_logDisplay = NodePath("Panel/Label")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.85
+
+[node name="Panel" type="Panel" parent="Panel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.85
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="TextEdit" type="TextEdit" parent="Panel/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "testing"

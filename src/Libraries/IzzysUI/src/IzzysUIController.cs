@@ -33,6 +33,7 @@ public partial class IzzysUIController : Node
     public static ITooltipCreator HoveredTooltipObject = null;
 
     public static ContextWindowController ContextWindowUnderMouse;
+    public static bool IsContextWindowOpen => _activeContextWindow is not null;
 
     public override void _EnterTree()
     {
@@ -44,23 +45,6 @@ public partial class IzzysUIController : Node
     public override void _Ready()
     {
         _contextWindowParentControl.CallDeferred("add_child", _contextWindowContainer);
-        OpenTestPopup();
-    }
-
-    private async void OpenTestPopup()
-    {
-        try
-        {
-            object result = await OpenPopupAndGetResult(new PopupInfo()
-            {
-                PopupType = PopupType.Text
-            });
-            Logger.Log($"Entered \"{(string)result}\"");
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e.ToString());
-        }
     }
 
     private static void OnUpdate_TooltipControl(double delta)
@@ -116,12 +100,13 @@ public partial class IzzysUIController : Node
     {
         
     }
-    public static void OpenContextWindow(ContextWindowInfo contextWindowInfo)
+    public static void OpenContextWindow(ContextWindowInfo contextWindowInfo, Vector2? position = null)
     {
         CloseActiveContextWindow();
         CloseActiveTooltip();
         
-        _activeContextWindow = ContextWindowController.Instantiate(contextWindowInfo, _instance.GetViewport().GetMousePosition(), parentNode:_instance._contextWindowContainer);
+        if (position is null) position = _instance.GetViewport().GetMousePosition();
+        _activeContextWindow = ContextWindowController.Instantiate(contextWindowInfo, position.Value, parentNode:_instance._contextWindowContainer);
         _instance._contextWindowContainer.GlobalPosition = _activeContextWindow.GlobalPosition;
         _instance._contextWindowContainer.AnchorRight = 1f;
         _instance._contextWindowContainer.OffsetRight = 0f;
@@ -153,6 +138,7 @@ public partial class IzzysUIController : Node
     private static Dictionary<UIWindowCategory, DisplayController> _activeDisplayWindowByCategory =
         new Dictionary<UIWindowCategory, DisplayController>();
     
+    /*
     public override void _UnhandledInput(InputEvent @event)
     {
         base._UnhandledInput(@event);
@@ -169,6 +155,7 @@ public partial class IzzysUIController : Node
             }
         }
     }
+    */
 
     public static bool DebugHeld => true;
 

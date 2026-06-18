@@ -57,7 +57,7 @@ public class Client : NetworkPeer
     }
 
     // Network Event Listener
-    protected override NetworkResponse? ReceiveJsonPacket(JsonPacket jsonPacket)
+    protected override NetworkResponse? ReceiveJsonPacket(NetPeer sender, JsonPacket jsonPacket)
     {
         switch (jsonPacket.Type)
         {
@@ -71,6 +71,17 @@ public class Client : NetworkPeer
             case nameof(SetStepPacket):
                 SetStepPacket packet = JsonSerializer.Deserialize<SetStepPacket>(jsonPacket.Payload);
                 GameState.GameStepID = packet.GameStepId;
+                return null;
+            
+            case nameof(ResyncHeaderPacket):
+                var resyncHeaderPacket = JsonSerializer.Deserialize<ResyncHeaderPacket>(jsonPacket.Payload);
+                switch (resyncHeaderPacket.Reason)
+                {
+                    case ResyncReason.InitialConnect: break; // Gamestate should already be fresh
+                    case ResyncReason.LoadingScenario: GameState = new ClientGameState(this); break;
+                    case ResyncReason.StateMismatch: GameState = new ClientGameState(this); break;
+                    default: throw new NotImplementedException();
+                }
                 return null;
             
             default: 

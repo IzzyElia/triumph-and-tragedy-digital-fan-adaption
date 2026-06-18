@@ -90,7 +90,7 @@ public partial class ContextWindowController : DisplayController
 		
 		foreach (ITooltipLink link in contextWindowInfo.Links)
 		{
-			ContextWindowLinkController linkButton = Prefabs.TooltipActionPrefab.Instantiate<ContextWindowLinkController>();
+			ContextWindowLinkController linkButton = Prefabs.TooltipLinkPrefab.Instantiate<ContextWindowLinkController>();
 			FurtherReadingContainer.AddChild(linkButton);
 			linkButton.Setup(this, link.Target);
 		}

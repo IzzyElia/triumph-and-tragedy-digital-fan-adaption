@@ -60,6 +60,7 @@ public class ServerGameState : GameState
         if (!typeof(GameEntity).IsAssignableFrom(entityType)) throw new ArgumentException($"The type {entityType} is not assignable to {typeof(GameEntity)}");
         GameEntity entity = Activator.CreateInstance(entityType) as GameEntity;
         if (id == -2) id = _idTicker++;
+        if (id >= _idTicker) _idTicker = id + 1;
         else if (id < 0) throw new ArgumentException($"Invalid game entity id {id}");
         else if (EntitiesById.ContainsKey(id)) throw new InvalidOperationException($"Entity with id {id} already exists");
         entity.Setup(this, id);
@@ -82,17 +83,20 @@ public class ServerGameState : GameState
 
     public EditorPacketResponse HandleEditorPacket(EditorPacket editorPacket)
     {
+        GameEntity entity;
+        
         if (!editorPacket.EntityExists)
         {
             if (editorPacket.EntityId >= 0)
             {
+                if (!EntitiesById.TryGetValue(editorPacket.EntityId, out entity)) return new EditorPacketResponse(entityId: -1);
                 EntitiesById.Remove(editorPacket.EntityId);
+                EntitiesByType.RemoveAllOfValue(entity);
                 return new EditorPacketResponse(entityId: -1);
             }
             else throw new ArgumentException($"Deleting an entity ({nameof(EditorPacket)}.{nameof(editorPacket.EntityExists)}) requires providing an entity id");
         }
 
-        GameEntity entity;
         if (editorPacket.EntityId == -2 || !EntitiesById.TryGetValue(editorPacket.EntityId, out entity))
         {
             Type type;

@@ -1,0 +1,40 @@
+[gd_scene load_steps=7 format=3 uid="uid://btx8t71qqid6g"]
+
+[ext_resource type="Script" uid="uid://cnnflyxg1n3qm" path="res://src/Libraries/IzzysUI/src/IzzysUIController.cs" id="1_7jktm"]
+[ext_resource type="Script" uid="uid://caw46db7bbkvr" path="res://src/Libraries/NetworkedBoardGameEntitySystem/Networking/NetworkController.cs" id="1_e2o6t"]
+[ext_resource type="Script" uid="uid://chfhtnnbdnyja" path="res://src/Game/DebuggingSetup.cs" id="2_feb5d"]
+[ext_resource type="PackedScene" uid="uid://divfuioy1iisg" path="res://scenes/Renderer/renderer_editor.tscn" id="4_7jktm"]
+[ext_resource type="Script" uid="uid://c1u0xr3nswq8x" path="res://src/Game/CameraController.cs" id="4_fc0e3"]
+[ext_resource type="PackedScene" uid="uid://dq21m00hdjor7" path="res://scenes/console.tscn" id="6_ryrav"]
+
+[node name="Game" type="Node3D"]
+
+[node name="GenericUIController" type="Node" parent="." node_paths=PackedStringArray("_contextWindowParentControl")]
+script = ExtResource("1_7jktm")
+_contextWindowParentControl = NodePath("../CanvasLayer/Control")
+
+[node name="NetworkController" type="Node" parent="."]
+script = ExtResource("1_e2o6t")
+
+[node name="DebugSetupInitiator" type="Node" parent="."]
+script = ExtResource("2_feb5d")
+_numClients = 1
+_port = 8080
+_rendererPrefab = ExtResource("4_7jktm")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.52133733, 0.85335076, 0, -0.85335076, 0.52133733, 0, 2.561, 0)
+script = ExtResource("4_fc0e3")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Console" parent="CanvasLayer" instance=ExtResource("6_ryrav")]
+
+[node name="Control" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

@@ -19,7 +19,7 @@ public partial class ContextWindowLinkController : Control
     {
         _target = target;
         _source = source;
-        _label.Text = target.Name;
+        _label.Text = target.LinkName;
     }
 
     void FollowLink()
