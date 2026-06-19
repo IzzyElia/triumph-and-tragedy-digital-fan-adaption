@@ -5,7 +5,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using TT2026.libraries.LiteNetLib_2._1._4.LiteNetLib;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Actions;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking.PacketTypes;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Saving;
 
 namespace TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
@@ -33,6 +35,19 @@ public class Server : NetworkPeer
     {
         switch (jsonPacket.Type)
         {
+            case nameof(PlayerActionPacket):
+                var playerActionPacket = JsonSerializer.Deserialize<PlayerActionPacket>(jsonPacket.Payload);
+                IPlayerAction playerAction = playerActionPacket.Deserialize();
+                lock (Mutex)
+                {
+                    // TODO Implement origin client validation.
+                    //  Make sure only the correct client can trigger the action
+                    bool success = GameState.TryExecuteAction(playerAction);
+                    if (success == false)
+                        return new NetworkResponse(jsonPacket.CallbackId, "Invalid Action", NetworkResponseError.Error);
+                }
+
+                return new NetworkResponse(jsonPacket.CallbackId, null, NetworkResponseError.None);
             case nameof(EditorPacket):
                 // TODO Authenticate Editor Packets
                 var editorPacket =  JsonSerializer.Deserialize<EditorPacket>(jsonPacket.Payload);

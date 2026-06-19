@@ -62,6 +62,9 @@ public abstract class EntityGameData
                 else if (gameStepId == __HistoryFrames[^1].GameStepID)
                 {
                     __HistoryFrames[^1] = frame;
+                    NotifyEntityStateChanged();
+                    ((ServerGameState)_entity.GameState).Server.PushUpdate(
+                        new EntityVariableUpdatePacket(gameStepId, _entity, Key, currentSerializedState));
                 }
                 else
                     throw

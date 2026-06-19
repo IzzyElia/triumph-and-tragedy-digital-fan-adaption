@@ -1,6 +1,6 @@
 namespace TT2026.Libraries.NetworkedBoardGameEntitySystem;
 
-public interface IGameStartInfo
-{
-    
-}
+/// <summary>
+/// Indicates an object is meant to be passed at game start
+/// </summary>
+public interface IGameStartInfo { }

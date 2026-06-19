@@ -96,7 +96,7 @@ public static class GameStateSaver
                         }
                         catch (KeyNotFoundException)
                         {
-                            throw new InvalidOperationException();
+                            Logger.Log($"Unable to find {sType}.{key}. It may just be depreciated");
                         }
                     }
                 }

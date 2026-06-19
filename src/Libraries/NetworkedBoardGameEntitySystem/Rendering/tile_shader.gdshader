@@ -32,6 +32,16 @@ uniform float alt_border_thickness : hint_range(0.0, 0.5) = 0.12;
 // 0 = pure border, 1 = pure water.
 uniform float river_border_blend : hint_range(0.0, 1.0) = 0.5;
 
+// --- Water Fresnel ------------------------------------------------------------
+// Tint applied to water at grazing view angles (rim / reflective sheen).
+// Only affects pixels that actually show water (ocean + rivers); proportional
+// to how much water is in the pixel, so it fades out across border/water blends.
+// NOTE: on flat top-down tiles the view angle stays near head-on, so keep
+// fresnel_power low (~1.0-1.5) and/or fresnel_strength high to make it visible.
+uniform vec4  fresnel_color    : source_color = vec4(0.6, 0.85, 1.0, 1.0);
+uniform float fresnel_power    : hint_range(0.5, 8.0) = 1.5;   // edge sharpness
+uniform float fresnel_strength : hint_range(0.0, 1.0) = 0.6;   // overall intensity
+
 // --- Terrain textures (sampled in world XZ space so they tile across tiles) --
 uniform sampler2D mountain_texture : source_color, repeat_enable, filter_linear_mipmap;
 uniform sampler2D forest_texture   : source_color, repeat_enable, filter_linear_mipmap;
@@ -66,6 +76,32 @@ const uint FOR_ALL = 0xFu << 28u; // bits 28-31
 
 bool is_set(uint mask, uint bit) {
     return (mask & bit) != 0u;
+}
+
+// --- Gradient noise (Inigo Quilez - iq/2013) ---------------------------------
+// https://www.shadertoy.com/view/XdXGW8
+vec2 random2(vec2 st){
+    st = vec2( dot(st,vec2(127.1,311.7)),
+              dot(st,vec2(269.5,183.3)) );
+    return -1.0 + 2.0*fract(sin(st)*43758.5453123);
+}
+float noise(vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    vec2 u = f*f*(3.0-2.0*f);
+    return mix( mix( dot( random2(i + vec2(0.0,0.0) ), f - vec2(0.0,0.0) ),
+                     dot( random2(i + vec2(1.0,0.0) ), f - vec2(1.0,0.0) ), u.x),
+                mix( dot( random2(i + vec2(0.0,1.0) ), f - vec2(0.0,1.0) ),
+                     dot( random2(i + vec2(1.0,1.0) ), f - vec2(1.0,1.0) ), u.x), u.y);
+}
+
+// --- View-angle Fresnel -------------------------------------------------------
+// dot(normal, view) is 1 facing the camera, ~0 at grazing angles, so
+// (1 - dot)^power is the classic Fresnel falloff that brightens the edges.
+// `normal` and `view` are expected in the same space (Godot's view space).
+float fresnel(vec3 normal, vec3 view, float power) {
+    float ndv = clamp(dot(normalize(normal), normalize(view)), 0.0, 1.0);
+    return pow(1.0 - ndv, power);
 }
 
 // Resolve which single 8-dir region (as a low-byte DIR_* bit) the pixel falls
@@ -108,11 +144,17 @@ void fragment() {
     vec2 uv = UV; // per-tile UV: (0,0) top-left .. (1,1) bottom-right.
     bool ocean = (tile_mask & RIVER_ALL) == RIVER_ALL;
 
+    // Tracks how much of the final pixel is water (0 = none, 1 = full water).
+    // Used to scale the Fresnel so it only touches water and fades across the
+    // river/border blend.
+    float water_amount = 0.0;
+
     // ---- Base fill + terrain overlays ----------------------------------------
     vec3 col = albedo_color.rgb;
 
     if (ocean) {
         col = water_color.rgb;
+        water_amount = 1.0;
     } else {
         vec2 t_uv = world_pos.xz * terrain_uv_scale;
 
@@ -142,18 +184,39 @@ void fragment() {
 
     if (ocean) {
         // All water already; just lay borders on top (main wins over alt).
-        if (main_set)     { col = border_color.rgb; }
-        else if (alt_set) { col = alt_border_color.rgb; }
+        if (main_set)     
+        {
+            if (noise(world_pos.xz * 5.0) > 0.1)
+            {
+                col = border_color.rgb; water_amount = 0.0; 
+            }
+            else
+            {
+                col = water_color.rgb; water_amount = 1.0;
+            }
+        }
+        else if (alt_set) 
+        {
+            col = alt_border_color.rgb; water_amount = 0.0; 
+         }
     } else {
         if (main_set && river_set) {
             col = mix(border_color.rgb, water_color.rgb, river_border_blend);
+            water_amount = river_border_blend;
         } else if (main_set) {
-            col = border_color.rgb;
+            col = border_color.rgb;       // water_amount stays 0
         } else if (river_set) {
             col = water_color.rgb;        // river overwrites the alt border
+            water_amount = 1.0;
         } else if (alt_set) {
-            col = alt_border_color.rgb;
+            col = alt_border_color.rgb;   // water_amount stays 0
         }
+    }
+
+    // ---- Water Fresnel (view-angle rim, water pixels only) -------------------
+    if (water_amount > 0.0) {
+        float f = fresnel(NORMAL, VIEW, fresnel_power);
+        col = mix(col, fresnel_color.rgb, f * fresnel_strength * water_amount);
     }
 
     ALBEDO = col;

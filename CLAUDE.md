@@ -29,7 +29,7 @@ This is the library under active development (`src/Libraries/NetworkedBoardGameE
 ### Game steps & the history model
 
 - `GameState.GameStepID` is the monotonic clock for the whole game. The server advances it with `ServerGameState.AdvanceGamePhaseTicker()`, which first calls `CommitState()` on every entity, then increments the step.
-- `CommitState()` is **server-only**; it serializes each field and, if changed since the last frame, appends a new `DataHistoryFrame` and pushes an `EntityVariableUpdatePacket`. Re-committing the same step without advancing `GameStepID` throws.
+- `CommitState()` is **server-only**; it serializes each field and, if changed since the last frame, pushes an `EntityVariableUpdatePacket`. Committing a changed value to the **same** `GameStepID` as the last frame overwrites that frame in place (and still pushes the update — needed for the create-then-mutate-in-one-step case, e.g. `InstantiateGameEntity` commits defaults and then an action sets the real values at the same step). Only committing to a step **earlier** than the last frame throws.
 - **Entities are never destroyed** — to "remove" one, flag it as dead via synced data. See the deliberately named `DestroyGameEntity_UNUSED_SEE_DOCS`. Destroying an entity would break history reconstruction.
 - New entities come from `ServerGameState.InstantiateGameEntity<T>()` (assigns a monotonic id from `_idTicker`).
 
@@ -48,6 +48,19 @@ Clients reconstruct entities/behaviors from packets by type name, so concrete `G
 ### Behaviors
 
 `GameBehavior` subclasses are server-enabled via `ServerGameState.SetEnabledGameBehaviors(...)`, which broadcasts a `GameBehaviorSyncPacket` of full type names so clients instantiate the matching set. (Game logic in behaviors is mostly unimplemented so far, e.g. `PlacementBehavior`.)
+
+### Player actions (`IPlayerAction`)
+
+`IPlayerAction` (`Actions/IPlayerAction.cs`) models a player's move as a **node in a graph of possibilities**, not a flat command. The idea: a partially-filled action can be expanded step-by-step, so a UI can build a move incrementally (with undo) and an AI can graph-search instead of enumerating every full move.
+
+- `From` — the parent node this action was derived from (the path back, for undo/trace).
+- `Next(gameState)` — every action legally derivable by adding **one** more increment to the current (partial) one.
+- `Validate(gameState, playerId)` — returns `ActionValidationResult`: `Valid` (executable now), `Incomplete` (not valid yet, but a descendant via `Next` could be), or `Illegal` (no valid descendant exists).
+- `ExecuteOn(serverGameState)` — applies the move to the **authoritative server** state. Server-only.
+
+A `GameBehavior` exposes the *root* actions available to a player through `GetPotentialActions(playerId)` (most behaviors `yield break` until implemented). `PlacementBehavior` is the worked example: during `Season.Setup` it seeds an empty `InitialPlacementAction` and yields its `Next(...)` expansions — one child per unfilled (nation, slot) × `UnitType`. Each nation's required starting units come from `NationDefinition.InitialUnits` (a `BoardSpaceId` + `Size`), iterated by `IterateExpectedPlacements` with a per-nation index used as `InitialPlacementId`.
+
+`IPlayerAction : ISyncable`, so actions are intended to travel over the wire as JSON like everything else (see Networking). **Caveat:** the wire format is `System.Text.Json` with no `IncludeFields`, so **only public properties serialize** — public *fields* (e.g. `InitialPlacementAction.FactionId`, `Phase`) are silently dropped. Keep anything that must survive the wire a `{ get; set; }` property.
 
 ### Rendering
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
+using Godot;
 using TT2026.libraries.LiteNetLib_2._1._4.LiteNetLib;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
@@ -17,15 +18,28 @@ public class Client : NetworkPeer
     private NetworkEventListener _listener;
     private NetManager _netManager;
     
-    public Client(GameRenderer renderer, bool forceCreateGameState = false)
+    public Client(bool forceCreateGameState = false)
     {
-        Renderer = renderer;
-        renderer.Client = this;
         if (forceCreateGameState) GameState = new ClientGameState(client: this);
         _listener = new NetworkEventListener(this);
         _netManager = new NetManager(_listener);
         _netManager.Start();
         GlobalSingletons.NetworkController.RegisterNetworkPeer(this);
+    }
+
+    public void SetRenderer(PackedScene rendererPrefab, Node parentNode)
+    {
+        if (Renderer is not null)
+        {
+            Renderer.QueueFree();
+        }
+        
+        Renderer = rendererPrefab.Instantiate<GameRenderer>();
+        Renderer.Client = this;
+        parentNode.CallDeferred("add_child", Renderer);
+        Renderer.Initialize();
+        
+        if (GameState is not null) Renderer.FullRefresh();
     }
 
     private (string address, int port, string password) _lastConnection;

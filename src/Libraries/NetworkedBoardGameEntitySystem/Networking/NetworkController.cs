@@ -5,6 +5,7 @@ using Godot.Collections;
 using TT2026.libraries.IzzysUI;
 using TT2026.libraries.IzzysUI.Tooltips;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Saving;
 
 namespace TT2026.GlobalSingletons;
 
@@ -34,6 +35,7 @@ public partial class NetworkController : Node
         TT2026.Logger.Warn($"Undefined behavior for NetworkController exiting the scene tree");
     }
 
+    DateTime _lastAutosave = DateTime.UtcNow;
     public override void _Process(double delta)
     {
         base._Process(delta);
@@ -41,6 +43,19 @@ public partial class NetworkController : Node
         {
             peer.NetManager.PollEvents();
             peer.MonitorTimeouts();
+        }
+
+        if (DateTime.UtcNow.Subtract(_lastAutosave) > TimeSpan.FromMinutes(2))
+        {
+            foreach (var peer in _networkPeers)
+            {
+                if (peer is Server server)
+                {
+                    string serializeGameStae = GameStateSaver.SerializeGameStae(server.GameState);
+                    GameStateSaver.SaveToFile("autosave.json", serializeGameStae);
+                    _lastAutosave = DateTime.UtcNow;
+                }
+            }
         }
     }
 }

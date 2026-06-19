@@ -1,3 +1,5 @@
+using System;
+
 namespace TT2026.libraries.NetworkedBoardGameEntitySystem.SyncedDataTypes;
 
 public class SyncedString(GameEntity gameEntity, string variableKey, string defaultValue = null)

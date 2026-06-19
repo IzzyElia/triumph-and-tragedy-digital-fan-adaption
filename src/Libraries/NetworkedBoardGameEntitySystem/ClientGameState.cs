@@ -1,6 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using TT2026.libraries.LiteNetLib_2._1._4.LiteNetLib;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Actions;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking.PacketTypes;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
 
 namespace TT2026.libraries.NetworkedBoardGameEntitySystem;
@@ -11,6 +16,7 @@ public class ClientGameState : GameState
     public Client Client;
     public override NetworkPeer NetworkManager => Client;
     public override GameRenderer Renderer => Client.Renderer;
+    public int PlayerId = -1;
 
     public ClientGameState(Client client)
     {
@@ -45,5 +51,41 @@ public class ClientGameState : GameState
         if (entity.GetType() != type) return EntityUpdatePacketApplyError.EntityTypeMismatch;
         
         return entity.TryApplyUpdatePacket(updatePacket);
+    }
+
+    public IEnumerable<IPlayerAction> GetPlayerActions(int playerId, IPlayerAction currentlyContemplatedAction)
+    {
+        // If the player is partially through doing an action (ex placing units),
+        //  only show anything that graphs out from it
+        // Otherwise, iterate the GameBehaviors and collect every root action they
+        //  allow
+        if (currentlyContemplatedAction is not null)
+        {
+            foreach (var next in currentlyContemplatedAction.Next(this))
+            {
+                yield return next;
+            }
+        }
+        else
+        {
+            foreach (var activeGameBehavior in GameBehaviors.Values)
+            {
+                foreach (var action in activeGameBehavior.GetPotentialActions(playerId))
+                {
+                    yield return action;
+                }
+            }
+        }
+    }
+    public async Task<bool> AttemptAction(IPlayerAction action)
+    {
+        // Final validation to prevent any weirdness. This should already have been done
+        //  of course the server revalidates on their end as well. This just
+        //  makes it clear which end the issue is on if it fails for some reason
+        if ((action.Validate(this) != ActionValidationResult.Valid)) throw new ArgumentException($"Attempted to send an illegal action");
+        var packet = new PlayerActionPacket(action);
+        if (Client.ConnectedServer is null) return false;
+        var response = await Client.SendRequestAwaitCallback(Client.ConnectedServer, packet);
+        return response.Error == NetworkResponseError.None;
     }
 }

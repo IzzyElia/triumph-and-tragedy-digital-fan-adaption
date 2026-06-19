@@ -1,3 +1,4 @@
+using System.Linq;
 using Godot;
 using TT2026.Game.Behaviors;
 using TT2026.Game.Entities;
@@ -21,6 +22,7 @@ public partial class TTRenderer : TilingGameRenderer
     public override void FullRefresh()
     {
         base.FullRefresh();
+        TileRefresh();
     }
 
     private TileInfo GetTileInfo(ICoordinate2d tileCoordinate, ref TileOwnershipBehavior tileOwnership)
@@ -39,23 +41,43 @@ public partial class TTRenderer : TilingGameRenderer
     {
         Logger.Log($"Running tile refresh");
         var tileOwnership = GameState.GetGameBehavior<TileOwnershipBehavior>();
+        if (tileOwnership is null) return;
         foreach (var boardSpace in GameState.GetEntitiesOfType<BoardSpace>())
         {
             foreach (ICoordinate2d tileCoordinate in tileOwnership.TileOwnership.Dict.GetValuesOfKey(boardSpace.ID))
             {
+                int tileid = GetTileId(tileCoordinate);
                 TileInfo tileInfo = GetTileInfo(tileCoordinate, ref tileOwnership);
-                TileInfo up = GetTileInfo(new GenericCoordinate2d(tileCoordinate.x, tileCoordinate.y - 1), ref tileOwnership);
-                TileInfo down = GetTileInfo(new GenericCoordinate2d(tileCoordinate.x, tileCoordinate.y + 1), ref tileOwnership);
-                TileInfo left = GetTileInfo(new GenericCoordinate2d(tileCoordinate.x - 1, tileCoordinate.y), ref tileOwnership);
-                TileInfo right = GetTileInfo(new GenericCoordinate2d(tileCoordinate.x + 1, tileCoordinate.y), ref tileOwnership);
-                bool upBorder = tileInfo.BoardSpace != up.BoardSpace;
-                bool downBorder = tileInfo.BoardSpace != down.BoardSpace;
-                bool leftBorder = tileInfo.BoardSpace != left.BoardSpace;
-                bool rightBorder = tileInfo.BoardSpace != right.BoardSpace;
-                bool upNationBorder = tileInfo.Nation != up.Nation;
-                bool downNationBorder = tileInfo.Nation != down.Nation;
-                bool leftNationBorder = tileInfo.Nation != left.Nation;
-                bool rightNationBorder = tileInfo.Nation != right.Nation;
+                GenericCoordinate2d upCoordinate = new GenericCoordinate2d(tileCoordinate.x, tileCoordinate.y - 1);
+                GenericCoordinate2d downCoordinate = new GenericCoordinate2d(tileCoordinate.x, tileCoordinate.y + 1);
+                GenericCoordinate2d leftCoordinate = new GenericCoordinate2d(tileCoordinate.x - 1, tileCoordinate.y);
+                GenericCoordinate2d rightCoordinate = new GenericCoordinate2d(tileCoordinate.x + 1, tileCoordinate.y);
+                TileInfo up = GetTileInfo(upCoordinate, ref tileOwnership);
+                TileInfo down = GetTileInfo(downCoordinate, ref tileOwnership);
+                TileInfo left = GetTileInfo(leftCoordinate, ref tileOwnership);
+                TileInfo right = GetTileInfo(rightCoordinate, ref tileOwnership);
+                bool isOcean = (TerrainType)tileInfo.BoardSpace.TerrainType.Value == TerrainType.Water;
+                if (tileInfo.BoardSpace.WaterTileOverrides.Value.Contains(tileid)) isOcean = !isOcean;
+                bool upIsInnerCoastline = up.BoardSpace == boardSpace && (boardSpace.WaterTileOverrides.Value.Contains(tileid) != 
+                                           boardSpace.WaterTileOverrides.Value.Contains(GetTileId(upCoordinate)));
+                bool downIsInnerCoastline = down.BoardSpace == boardSpace && (boardSpace.WaterTileOverrides.Value.Contains(tileid) != 
+                                                                            boardSpace.WaterTileOverrides.Value.Contains(GetTileId(downCoordinate)));
+                bool leftIsInnerCoastline = left.BoardSpace == boardSpace && (boardSpace.WaterTileOverrides.Value.Contains(tileid) != 
+                                                                            boardSpace.WaterTileOverrides.Value.Contains(GetTileId(leftCoordinate)));
+                bool rightIsInnerCoastline = right.BoardSpace == boardSpace && (boardSpace.WaterTileOverrides.Value.Contains(tileid) != 
+                                                                             boardSpace.WaterTileOverrides.Value.Contains(GetTileId(rightCoordinate)));
+                bool upBorder = tileInfo.BoardSpace != up.BoardSpace || (isOcean && upIsInnerCoastline);
+                bool downBorder = tileInfo.BoardSpace != down.BoardSpace || (isOcean && downIsInnerCoastline);
+                bool leftBorder = tileInfo.BoardSpace != left.BoardSpace || (isOcean && leftIsInnerCoastline);
+                bool rightBorder = tileInfo.BoardSpace != right.BoardSpace || (isOcean && rightIsInnerCoastline);
+                bool upNationBorder = (tileInfo.Nation != up.Nation || (!isOcean && upIsInnerCoastline)) 
+                                      && tileInfo.Nation is not null;
+                bool downNationBorder = (tileInfo.Nation != down.Nation || (!isOcean && downIsInnerCoastline)) 
+                                        && tileInfo.Nation is not null;
+                bool leftNationBorder = (tileInfo.Nation != left.Nation || (!isOcean && leftIsInnerCoastline)) 
+                                        && tileInfo.Nation is not null;
+                bool rightNationBorder = (tileInfo.Nation != right.Nation || (!isOcean && rightIsInnerCoastline)) 
+                                         && tileInfo.Nation is not null;
                 TileShaderBitmask bitmask = new TileShaderBitmask()
                 {
                     Up = upNationBorder,
@@ -75,6 +97,15 @@ public partial class TTRenderer : TilingGameRenderer
                     AltDownLeft = downBorder | leftBorder,
                     AltUpRight = upBorder | rightBorder,
                     AltDownRight = downBorder | rightBorder,
+                    
+                    RiverUp = isOcean, // | is on a river
+                    RiverDown =  isOcean,
+                    RiverLeft =  isOcean,
+                    RiverRight =  isOcean,
+                    RiverUpLeft =  isOcean,
+                    RiverDownLeft =  isOcean,
+                    RiverUpRight =  isOcean,
+                    RiverDownRight =  isOcean,
                 };
                 MeshInstance3D tileRenderer = GetTile(tileCoordinate);
                 Color color;
@@ -113,7 +144,7 @@ public partial class TTRenderer : TilingGameRenderer
         EntitiesChanged.Clear();
         
         if (needsFullRefresh) FullRefresh();
-        if (needsTileRefresh) TileRefresh();
+        else if (needsTileRefresh) TileRefresh();
     }
 
     protected override void OnTileClicked(ICoordinate2d tileCoordinate, TileClickMetadata input)

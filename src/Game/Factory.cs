@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using TT2026.Game.Behaviors;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem;
@@ -8,6 +9,18 @@ namespace TT2026.Game;
 
 public static class Factory
 {
+    [Export] private const string _editorRendererUid = "uid://divfuioy1iisg";
+    [Export] private const string _playerRendererUid = "uid://4ws7mfuqpxd0";
+    public static PackedScene EditorRenderer;
+    public static PackedScene PlayerRenderer;
+
+    static Factory()
+    {
+        EditorRenderer = ResourceLoader.Load<PackedScene>(_editorRendererUid);
+        if (EditorRenderer is null) Logger.Error($"{nameof(EditorRenderer)} not found");
+        PlayerRenderer = ResourceLoader.Load<PackedScene>(_playerRendererUid);
+        if (PlayerRenderer is null) Logger.Error($"{nameof(PlayerRenderer)} not found");
+    }
     public static Server CreateServer(int port)
     {
         Server server = new Server(port);
@@ -15,18 +28,16 @@ public static class Factory
         return server;
     }
 
-    public static Client CreateClientAndConnectLocally(int port, string password, PackedScene rendererPrefab)
+    public static Client CreateClientAndConnectLocally(int port, string password)
     {
-        GameRenderer renderer = rendererPrefab.Instantiate<GameRenderer>();
-        Client client = new Client(renderer);
+        Client client = new Client();
         client.Connect("localhost", port, password: password);
         return client;
     }
     
-    public static Client CreateStandaloneClient(PackedScene rendererPrefab)
+    public static Client CreateStandaloneClient()
     {
-        GameRenderer renderer = rendererPrefab.Instantiate<GameRenderer>();
-        Client client = new Client(renderer, forceCreateGameState: true);
+        Client client = new Client(forceCreateGameState: true);
         return client;
     }
 }

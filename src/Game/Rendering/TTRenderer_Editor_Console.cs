@@ -31,18 +31,14 @@ public partial class TTRenderer_Editor
     }
 
     [ConsoleCommand("water")]
-    private void Console_SetToWater() => SetTerrain(TerrainType.Water);
+    private void Console_SetToWater() => SetTerrain(_selectedBoardSpaceId, TerrainType.Water);
 
     [ConsoleCommand("land")]
-    private void Console_SetToLand() => SetTerrain(TerrainType.Land);
+    private void Console_SetToLand() => SetTerrain(_selectedBoardSpaceId, TerrainType.Land);
+    
+    [ConsoleCommand("strait")]
+    private void Console_SetToStrait() => SetTerrain(_selectedBoardSpaceId, TerrainType.Strait);
     
     [ConsoleCommand("impassable")]
-    private void Console_SetToImpassable() => SetTerrain(TerrainType.Land);
-
-    private async Task SetTerrain(TerrainType terrainType, Action onCompletion = null)
-    {
-        if (_selectedBoardSpace is null) return;
-        await EditValue(_selectedBoardSpaceId, nameof(BoardSpace.TerrainType),
-            new SyncedInt(null, null, (int)terrainType).SerializeData());
-    }
+    private void Console_SetToImpassable() => SetTerrain(_selectedBoardSpaceId, TerrainType.Land);
 }

@@ -12,15 +12,16 @@ namespace TT2026.Game.Entities;
 
 public class Nation : GameEntity, IContextWindowCreator, ILinkable
 {
-    public SyncedString Name;
-    
     public SyncedColor Color;
-    public string LinkName => Name.Value;
+    public SyncedInt FactionId;
+    public SyncedObject<NationDefinition> Definition;
+    public string LinkName => Definition.Value.Name;
 
     public Nation()
     {
-        Name = new SyncedString(this, nameof(Name), "Unnamed Country");
         Color = new SyncedColor(this, nameof(Color), Colors.DeepPink);
+        FactionId = new SyncedInt(this, nameof(FactionId), 0);
+        Definition = new SyncedObject<NationDefinition>(this, nameof(Definition), new NationDefinition());
     }
     public ContextWindowInfo GetContextWindow()
     {
@@ -34,7 +35,10 @@ public class Nation : GameEntity, IContextWindowCreator, ILinkable
                     Header = "Country Name",
                     PopupType = PopupType.Text
                 });
-                await editor.EditValue(ID, nameof(Name),  (string)popupResponse);
+                var response = (string)popupResponse;
+                if (response is null || response.Length == 0) return null;
+                var def = Definition.Value; def.Name = response; Definition.Value = def;
+                await editor.EditValue(ID, nameof(Definition),  Definition.SerializeData());
                 return null;
             }));
             interactions.Add(new SimpleUIActionAsync("Set Color", async () =>
@@ -68,5 +72,23 @@ public class Nation : GameEntity, IContextWindowCreator, ILinkable
             interactions: interactions
             );
     }
+}
 
+public struct NationDefinition : ISyncable
+{
+    public NationDefinition()
+    {
+    }
+
+    public struct InitialUnitDefinition
+    {
+        public int BoardSpaceId { get; set; }
+        public int StartingPips { get; set; }
+    }
+
+    public string Name { get; set; } = "Unnamed Country";
+    public string AdjectiveName { get; set; } = "MISSING ADJECTIVE";
+    public string Tag { get; set; } = "MISSING TAG";
+    public int[] Cores { get; set; } = Array.Empty<int>();
+    public InitialUnitDefinition[] InitialUnits { get; set; } = Array.Empty<InitialUnitDefinition>();
 }

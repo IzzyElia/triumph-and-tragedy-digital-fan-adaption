@@ -6,10 +6,15 @@
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("1_4sb7q")
+shader_parameter/tile_mask = 0
 shader_parameter/border_color = Color(0, 0.41555968, 0.9085808, 1)
 shader_parameter/alt_border_color = Color(0.24, 0.24, 0.24, 1)
 shader_parameter/albedo_color = Color(0.4524659, 0.26161778, 0.14054692, 1)
+shader_parameter/water_color = Color(0.44838232, 0.629731, 1, 1)
 shader_parameter/border_thickness = 0.250000011875
 shader_parameter/alt_border_thickness = 0.10000000475
-shader_parameter/water_color = Color(0.5394296, 0.6836635, 0.8749713, 1)
-shader_parameter/border_mask = 0
+shader_parameter/river_border_blend = 0.800000038
+shader_parameter/fresnel_color = Color(0.8135938, 0.86906856, 0.99999744, 1)
+shader_parameter/fresnel_power = 1.5000000475
+shader_parameter/fresnel_strength = 1.0
+shader_parameter/terrain_uv_scale = 1.0

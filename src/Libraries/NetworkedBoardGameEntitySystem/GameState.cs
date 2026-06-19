@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using TT2026.libraries.Izzy;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Actions;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
 
@@ -13,13 +14,14 @@ public abstract class GameState
 {
     public static Dictionary<string, Type> KnownEntityTypes = new();
     public static Dictionary<string, Type> KnownBehaviorTypes = new();
+    public static Dictionary<string, Type> KnownPlayerActionTypes = new();
     public static HashSet<Assembly> LoadedAssemblies = new();
     public static void LoadTypesFromCurrentAssembly()
     {
         Assembly assembly = Assembly.GetCallingAssembly();
         void LoadTypeInto<T>(Dictionary<string, Type> into)
         {
-            foreach (var type in assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(T)) && !x.IsAbstract))
+            foreach (var type in assembly.GetTypes().Where(x => typeof(T).IsAssignableFrom(x) && !x.IsAbstract))
             {
                 if (type.FullName is null) continue;
                 if (into.ContainsKey(type.FullName)) throw new InvalidOperationException($"Duplicate type {type.FullName}");
@@ -32,6 +34,7 @@ public abstract class GameState
         Logger.Log("Loading game entity types");
         LoadTypeInto<GameEntity>(KnownEntityTypes);
         LoadTypeInto<GameBehavior>(KnownBehaviorTypes);
+        LoadTypeInto<IPlayerAction>(KnownPlayerActionTypes);
         LoadedAssemblies.Add(assembly);
     }
     

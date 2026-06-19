@@ -38,5 +38,6 @@ public enum TerrainType
 {
     Land,
     Water,
+    Strait,
     Impassable,
 }

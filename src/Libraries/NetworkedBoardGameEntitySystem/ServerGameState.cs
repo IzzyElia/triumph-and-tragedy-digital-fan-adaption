@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Actions;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
@@ -70,6 +72,14 @@ public class ServerGameState : GameState
     
     /// <summary>Because each entity also stores its own history, entities should never be destroyed in any way, only flagged as being in a dead state</summary>
     public void DestroyGameEntity () {}
+
+    public void StartGame(IGameStartInfo GameStartInfo)
+    {
+        foreach (var behavior in GameBehaviors.Values)
+        {
+            behavior.OnGameStart(GameStartInfo);
+        }
+    }
     
     public void AdvanceGamePhaseTicker()
     {
@@ -79,6 +89,10 @@ public class ServerGameState : GameState
         }
         GameStepID++;
         Server.PushUpdate(new SetStepPacket(GameStepID));
+        foreach (var behavior in GameBehaviors.Values)
+        {
+            behavior.OnPhaseTickerAdvancing();
+        }
     }
 
     public EditorPacketResponse HandleEditorPacket(EditorPacket editorPacket)
@@ -117,5 +131,17 @@ public class ServerGameState : GameState
         
         Logger.Log($"Successfully applied edit");
         return new EditorPacketResponse(entityId: entity.ID);
+    }
+
+    public bool TryExecuteAction(IPlayerAction playerAction)
+    {
+        var validationResult = playerAction.Validate(this);
+        if (validationResult != ActionValidationResult.Valid)
+        {
+            return false;
+        }
+        playerAction.ExecuteOn(this);
+        AdvanceGamePhaseTicker();
+        return true;
     }
 }
