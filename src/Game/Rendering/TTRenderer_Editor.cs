@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Godot;
 using TT2026.Game.Behaviors;
+using TT2026.Game.Definitions;
 using TT2026.Game.Entities;
 using TT2026.libraries.Izzy.Geometry;
 using TT2026.libraries.IzzysUI;
@@ -43,17 +45,8 @@ public partial class TTRenderer_Editor : TTRenderer
         _editors.Remove(this);
     }
 
-    private void OnNotConnected()
-    {
-        IzzysUIController.OpenContextWindow(new ContextWindowInfo(
-            header: $"Disconnected from Server",
-            interactions: [new SimpleUIAction("Reconnect", () =>
-            {
-                GameState.Client.Reconnect();
-            })]
-        ));
-    }
-    public async Task<int> CreateEntity<T>() where T : GameEntity
+    public async Task<int> CreateEntity<T>() where T : GameEntity => await CreateEntity(typeof(T));
+    public async Task<int> CreateEntity(Type t)
     {
         NetworkResponse response;
         try
@@ -64,7 +57,7 @@ public partial class TTRenderer_Editor : TTRenderer
                     entityExists: true,
                     entityId: -2, // Server assigns id to new entity
                     gameStepId: 0,
-                    entityType: typeof(T),
+                    entityType: t,
                     variableName: null,
                     variableValue: null,
                     editorAuthKey: editorAuthKey
@@ -164,6 +157,8 @@ public partial class TTRenderer_Editor : TTRenderer
         }
     }
 
+    protected override void RecalculatePotentialActions() { }
+
     private void OpenTileContextWindow(ICoordinate2d tileCoordinate, Vector2 position)
     {
         if (GameState.Client.ConnectedServer is null) {OnNotConnected(); return;}
@@ -191,17 +186,17 @@ public partial class TTRenderer_Editor : TTRenderer
                 return null;
             }));
             InjectColorActions(tileCoordinate, position, boardSpace, ref interactions);
+            InjectSpacePropertiesActions(tileCoordinate, position, boardSpace, ref interactions);
             InjectTerrainActions(tileCoordinate, position, boardSpace, ref interactions);
-
-            if (selectedBoardSpace?.Nation is not null)
+            if (selectedBoardSpace?.OwnerNation is not null)
             {
-                interactions.Add(new SimpleUIActionAsync($"Set Nation to {selectedBoardSpace.Nation.Definition.Value.Name}", async () =>
+                interactions.Add(new SimpleUIActionAsync($"Set Nation to {selectedBoardSpace.OwnerNation.Definition.Value.Name}", async () =>
                 {
-                    await SetNation(boardSpaceId, selectedBoardSpace.Nation.ID, () => OpenTileContextWindow(tileCoordinate, position));
+                    await SetNation(boardSpaceId, selectedBoardSpace.OwnerNation.ID, () => OpenTileContextWindow(tileCoordinate, position));
                     return null;
                 }));
             }
-            if (boardSpace?.Nation is null)
+            if (boardSpace?.OwnerNation is null)
             {
                 interactions.Add(new SimpleUIActionAsync("Create Nation", async () =>
                 {
@@ -210,9 +205,9 @@ public partial class TTRenderer_Editor : TTRenderer
                 }));
             }
 
-            if (boardSpace.Nation is not null)
+            if (boardSpace.OwnerNation is not null)
             {
-                interactions.Add(new Link<Nation>(boardSpace.Nation));
+                interactions.Add(new Link<Nation>(boardSpace.OwnerNation));
             }
         }
         
@@ -221,43 +216,71 @@ public partial class TTRenderer_Editor : TTRenderer
             await CreateSpace(tileCoordinate, tileOwnership, () => OpenTileContextWindow(tileCoordinate, position));
             return null;
         }));
+
+        string text = null;
+        if (boardSpace is not null)
+        {
+            StringBuilder sb = new StringBuilder();
+            if (boardSpace.CityType is not null) sb.AppendLine($"{boardSpace.CityType.Definition.Value.Name}");
+            else sb.AppendLine($"Undeveloped");
+            sb.Append($"Resources: {boardSpace.Resources.Value}");
+            text = sb.ToString();
+        }
         
         IzzysUIController.OpenContextWindow(new ContextWindowInfo(
             header: title,
+            text: text,
             interactions: interactions
             ), position);
     }
-
-    private void InjectTerrainActions(ICoordinate2d tileCoordinate, Vector2 position, BoardSpace boardSpace, ref List<IUIInteraction> interactions)
-    {
-        if (boardSpace.GetTerrainType() == TerrainType.Land)
-            interactions.Add(new SimpleUIActionAsync("Set to Ocean", async () =>
-            {
-                await SetTerrain(boardSpace.ID, TerrainType.Water, () => OpenTileContextWindow(tileCoordinate, position));
-                return null;
-            }));
-        else if (boardSpace.GetTerrainType() == TerrainType.Water)
-        {
-            interactions.Add(new SimpleUIActionAsync("Set to Land", async () =>
-            {
-                await SetTerrain(boardSpace.ID, TerrainType.Land, () => OpenTileContextWindow(tileCoordinate, position));
-                return null;
-            }));
-        }
-        interactions.Add(new SimpleUIActionAsync("Toggle Water Override", async () =>
-        {
-            await ToggleTileWaterStatus(tileCoordinate, () => OpenTileContextWindow(tileCoordinate, position));
-            return null;
-        }));
-    }
-
+    
     private void OpenMenuContextWindow()
     {
         if (GameState.Client.ConnectedServer is null) {OnNotConnected(); return;}
         
         var interactions = new List<IUIInteraction>();
-        interactions.Add(new SimpleUIAction("Quicksave", () => Quicksave()));
-        interactions.Add(new SimpleUIAction("Quickload", () => Quickload()));
+        
+        // Only allow saving/loading if the game is not started to prevent accidentally overriding the scenario
+        if (GameState.GameStepID == 0)
+        {
+            interactions.Add(new SimpleUIAction("Quicksave", () => Quicksave()));
+            interactions.Add(new SimpleUIAction("Quickload", () => Quickload()));
+            interactions.Add(new SimpleUIAction("Start Game", () => StartGame()));
+        }
+        
+        Type[] definitionTypes = new[]
+        {
+            typeof(UnitType),
+            typeof(CityType),
+        };
+        foreach (var type in definitionTypes)
+        {
+            interactions.Add(new SimpleUIAction($"Edit {type.Name}s", () =>
+            {
+                var editorInteractions = new List<IUIInteraction>();
+                editorInteractions.Add(new SimpleUIActionAsync($"Create New {type.Name}", async () =>
+                {
+                    try
+                    {
+                        await CreateEntity(type);
+                        IzzysUIController.CloseActiveContextWindow();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e.ToString());
+                    }
+                    return null;
+                }));
+                foreach (var entity in GameState.GetEntitiesOfType(type))
+                {
+                    if (entity is not ILinkable linkable) throw new InvalidOperationException($"{entity.GetType().Name} is not ILinkable");
+                    editorInteractions.Add(new Link(linkable));
+                }
+                IzzysUIController.OpenContextWindow(new ContextWindowInfo(
+                    header: $"Edit {type.Name}",
+                    interactions: editorInteractions));
+            }));
+        }
         IzzysUIController.OpenContextWindow(new ContextWindowInfo(
             header: "Editor Menu",
             interactions: interactions));
@@ -340,5 +363,54 @@ public partial class TTRenderer_Editor : TTRenderer
         }));
         // Nudge Color intentionally does not refresh the context window
         interactions.Add(new SimpleUIAction("Nudge Color", () => NudgeColor(boardSpace.ID, boardSpace)));
+    }
+    
+    private void InjectTerrainActions(ICoordinate2d tileCoordinate, Vector2 position, BoardSpace boardSpace, ref List<IUIInteraction> interactions)
+    {
+        if (boardSpace.GetTerrainType() == TerrainType.Land)
+            interactions.Add(new SimpleUIActionAsync("Set to Ocean", async () =>
+            {
+                await SetTerrain(boardSpace.ID, TerrainType.Water, () => OpenTileContextWindow(tileCoordinate, position));
+                return null;
+            }));
+        else if (boardSpace.GetTerrainType() == TerrainType.Water)
+        {
+            interactions.Add(new SimpleUIActionAsync("Set to Land", async () =>
+            {
+                await SetTerrain(boardSpace.ID, TerrainType.Land, () => OpenTileContextWindow(tileCoordinate, position));
+                return null;
+            }));
+        }
+        interactions.Add(new SimpleUIActionAsync("Toggle Water Override", async () =>
+        {
+            await ToggleTileWaterStatus(tileCoordinate, () => OpenTileContextWindow(tileCoordinate, position));
+            return null;
+        }));
+    }
+    
+    private void InjectSpacePropertiesActions(ICoordinate2d tileCoordinate, Vector2 position, BoardSpace boardSpace, ref List<IUIInteraction> interactions)
+    {
+        if (boardSpace.GetTerrainType() == TerrainType.Land) {
+            interactions.Add(new SimpleUIActionAsync("Set City Type", async () =>
+            {
+                await SetCityType(boardSpace.ID, onCompletion:  () => OpenTileContextWindow(tileCoordinate, position));
+                return null;
+            }));
+            interactions.Add(new SimpleUIActionAsync("Set Resource Count", async () =>
+            {
+                await SetResources(boardSpace.ID, onCompletion: () => OpenTileContextWindow(tileCoordinate, position));
+                return null;
+            }));
+            interactions.Add(new SimpleUIActionAsync("Set City Position", async () =>
+            {
+                await SetCityTilePosition(tileCoordinate, boardSpace.ID);
+                return null;
+            }));
+            interactions.Add(new SimpleUIActionAsync("Set Resources Position", async () =>
+            {
+                await SetResourceTilePosition(tileCoordinate, boardSpace.ID);
+                return null;
+            }));
+        }
     }
 }

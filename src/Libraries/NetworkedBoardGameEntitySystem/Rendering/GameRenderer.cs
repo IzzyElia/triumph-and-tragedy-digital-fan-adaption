@@ -10,7 +10,10 @@ public abstract partial class GameRenderer : Node3D
 {
     public Client Client { get; set; }
     public ClientGameState GameState => Client.GameState;
-    /// <summary>Tracks entities who's state has changed since the renderer last handled them</summary>
+    /// <summary>
+    /// Tracks entities who's state has changed since the renderer last handled them.
+    /// Special values include -2 (game step change)
+    /// </summary>
     public HashSet<int> EntitiesChanged = new();
 
     /// <summary>

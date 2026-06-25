@@ -35,6 +35,11 @@ public class Server : NetworkPeer
     {
         switch (jsonPacket.Type)
         {
+            case nameof(StartGamePacket):
+                var startGamePacket = JsonSerializer.Deserialize<StartGamePacket>(jsonPacket.Payload);
+                var gameStartInfo = startGamePacket.Deserialize();
+                GameState.StartGame(gameStartInfo);
+                return new NetworkResponse(jsonPacket.CallbackId, NetworkResponseError.None);
             case nameof(PlayerActionPacket):
                 var playerActionPacket = JsonSerializer.Deserialize<PlayerActionPacket>(jsonPacket.Payload);
                 IPlayerAction playerAction = playerActionPacket.Deserialize();
@@ -47,7 +52,10 @@ public class Server : NetworkPeer
                         return new NetworkResponse(jsonPacket.CallbackId, "Invalid Action", NetworkResponseError.Error);
                 }
 
-                return new NetworkResponse(jsonPacket.CallbackId, null, NetworkResponseError.None);
+                return new NetworkResponse(jsonPacket.CallbackId, NetworkResponseError.None);
+            case nameof(RequestPlayerPositionPacket):
+                // TODO Handle player assignment server-side
+                return new NetworkResponse(jsonPacket.CallbackId, NetworkResponseError.None);
             case nameof(EditorPacket):
                 // TODO Authenticate Editor Packets
                 var editorPacket =  JsonSerializer.Deserialize<EditorPacket>(jsonPacket.Payload);

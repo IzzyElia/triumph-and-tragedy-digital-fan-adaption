@@ -27,12 +27,12 @@ public class TTSyncronizationBehavior : TTGameBehavior
         PhasingFaction = new SyncedInt(this, nameof(PhasingFaction), -1);
     }
     
-    public TTPhaseData GetPhaseData()
+    public TTPhaseData? GetPhaseData()
     {
-        if (CurrentSeason.Value == (int)Season.Undefined 
-            || CurrentSubphase.Value == (int)Subphase.Undefined 
+        if (CurrentSeason.Value == (int)Season.Undefined
+            || CurrentSubphase.Value == (int)Subphase.Undefined
             || CurrentYear.Value == -1)
-            throw new InvalidOperationException($"Phase hasn't been set or was reset to its default value");
+            return null;
         return new TTPhaseData()
         {
             Year = CurrentYear.Value,

@@ -19,6 +19,8 @@ public class ServerGameState : GameState
     /// A list of changes that have happened in the gamestate that still need to be pushed to clients
     /// </summary>
     private int _idTicker;
+
+    private int _behaviorIdTicker = -100;
     
     public ServerGameState(Server server)
     {
@@ -36,7 +38,7 @@ public class ServerGameState : GameState
                 GameBehavior gameBehavior;
                 try
                 {
-                    gameBehavior = (GameBehavior)InstantiateGameEntity(behaviorType);
+                    gameBehavior = (GameBehavior)InstantiateGameEntity(behaviorType, id:_behaviorIdTicker--);
                     GameBehaviors.Add(behaviorType, gameBehavior);
                 }
                 catch (InvalidCastException)
@@ -63,7 +65,7 @@ public class ServerGameState : GameState
         GameEntity entity = Activator.CreateInstance(entityType) as GameEntity;
         if (id == -2) id = _idTicker++;
         if (id >= _idTicker) _idTicker = id + 1;
-        else if (id < 0) throw new ArgumentException($"Invalid game entity id {id}");
+        else if (id == -1) throw new ArgumentException($"Invalid game entity id {id}");
         else if (EntitiesById.ContainsKey(id)) throw new InvalidOperationException($"Entity with id {id} already exists");
         entity.Setup(this, id);
         entity.CommitState();
@@ -75,10 +77,12 @@ public class ServerGameState : GameState
 
     public void StartGame(IGameStartInfo GameStartInfo)
     {
+        AdvanceGamePhaseTicker();
         foreach (var behavior in GameBehaviors.Values)
         {
             behavior.OnGameStart(GameStartInfo);
         }
+        AdvanceGamePhaseTicker();
     }
     
     public void AdvanceGamePhaseTicker()
@@ -140,8 +144,8 @@ public class ServerGameState : GameState
         {
             return false;
         }
-        playerAction.ExecuteOn(this);
         AdvanceGamePhaseTicker();
+        playerAction.ExecuteOn(this);
         return true;
     }
 }

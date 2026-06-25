@@ -51,8 +51,8 @@ public partial class NetworkController : Node
             {
                 if (peer is Server server)
                 {
-                    string serializeGameStae = GameStateSaver.SerializeGameStae(server.GameState);
-                    GameStateSaver.SaveToFile("autosave.json", serializeGameStae);
+                    string serializedGameStae = GameStateSaver.SerializeGameStae(server.GameState);
+                    GameStateSaver.SaveToFile("scenarios/autosave.json", serializedGameStae);
                     _lastAutosave = DateTime.UtcNow;
                 }
             }

@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://divfuioy1iisg"]
+[gd_scene load_steps=8 format=3 uid="uid://divfuioy1iisg"]
 
 [ext_resource type="Script" uid="uid://cb60dfbtx6kkd" path="res://src/Game/Rendering/TTRenderer_Editor.cs" id="1_vjraf"]
 [ext_resource type="Material" uid="uid://ptuk1btjbv78" path="res://scenes/Renderer/tile_material.tres" id="2_c34sv"]
+[ext_resource type="Texture2D" uid="uid://crjaf3w20iim8" path="res://icons/triangle.png" id="2_fxrs6"]
 [ext_resource type="Texture2D" uid="uid://bp0guhurgx167" path="res://map tracing images/tracing_world_1936.jpg" id="2_y3ksa"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_y3ksa"]
@@ -16,6 +17,7 @@ albedo_texture = ExtResource("2_y3ksa")
 [node name="Renderer" type="Node3D" node_paths=PackedStringArray("_tracingImage")]
 script = ExtResource("1_vjraf")
 _tracingImage = NodePath("TracingImage")
+ResourcesIconTexture = ExtResource("2_fxrs6")
 Width = 256
 Height = 128
 _tileMesh = SubResource("QuadMesh_y3ksa")

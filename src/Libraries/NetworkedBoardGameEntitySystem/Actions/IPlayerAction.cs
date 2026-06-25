@@ -49,6 +49,12 @@ public interface IPlayerAction : ISyncable
     /// For example, a tile with units that could be moved
     /// </summary>
     public IEnumerable<int> HighlightEntities(GameState gameState);
+
+    /// <summary>
+    /// Returns true if the action is a partial duplicate of any of the other
+    /// actions in <paramref name="potentialActions"></paramref>. Useful for UI
+    /// </summary>
+    bool DuplicatesWith(IEnumerable<IPlayerAction> potentialActions);
 }
 
 public enum ActionValidationResult

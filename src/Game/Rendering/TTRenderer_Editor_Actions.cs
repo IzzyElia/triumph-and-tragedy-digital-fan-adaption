@@ -1,8 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
-using TT2026.Game.Behaviors;
+using TT2026.Game.Definitions;
 using TT2026.Game.Entities;
 using TT2026.libraries.Izzy.Geometry;
 using TT2026.libraries.IzzysUI;
@@ -10,7 +11,7 @@ using TT2026.Libraries.IzzysUI.Popups;
 using TT2026.libraries.NetworkedBoardGameEntitySystem;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
-using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking.PacketTypes;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Saving;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.SyncedDataTypes;
 
@@ -128,7 +129,7 @@ public partial class TTRenderer_Editor
             Logger.Log($"Rename Cancelled");
         }
     }
-
+    
     public async Task CreateSpace(ICoordinate2d tileCoordinate, TileOwnershipBehavior tileOwnership, Action onCompletion = null)
     {
         try
@@ -152,6 +153,42 @@ public partial class TTRenderer_Editor
                 new SyncedInt(null, null, (int)terrainType).SerializeData());
             onCompletion?.Invoke();
         }
+
+    private async Task SetCityType(int boardSpaceId, Action onCompletion = null)
+    {
+        var cityType = await TTUtils.PopupSearchEntity<CityType>(GameState, "City Type", x => x.Definition.Value.Name);
+        int cityTypeId = cityType is null ? -1 : cityType.ID;
+        var boardSpace = GameState.GetEntity<BoardSpace>(boardSpaceId);
+        boardSpace.CityTypeId.Value = cityTypeId;
+        await EditValue(boardSpaceId, nameof(BoardSpace.CityTypeId), boardSpace.CityTypeId.SerializeData());
+        onCompletion?.Invoke();
+    }
+    
+    private async Task SetResources(int boardSpaceId, Action onCompletion = null)
+    {
+        var result = (string)await IzzysUIController.OpenPopupAndGetResult(new PopupInfo()
+        {
+            Header = $"Resources",
+            PopupType = PopupType.Text
+        });
+        if (!int.TryParse(result, out var resources)) return;
+        var boardSpace = GameState.GetEntity<BoardSpace>(boardSpaceId);
+        boardSpace.Resources.Value = resources;
+        await EditValue(boardSpaceId, nameof(BoardSpace.Resources), boardSpace.Resources.SerializeData());
+        onCompletion?.Invoke();
+    }
+
+    public async Task SetCityTilePosition(ICoordinate2d tileCoordinate, int boardSpaceId)
+    {
+        int tileId = GetTileId(tileCoordinate);
+        await EditValue(boardSpaceId, nameof(BoardSpace.CityTilePosition), new SyncedInt(null, null, tileId).SerializeData());
+    }
+    
+    public async Task SetResourceTilePosition(ICoordinate2d tileCoordinate, int boardSpaceId)
+    {
+        int tileId = GetTileId(tileCoordinate);
+        await EditValue(boardSpaceId, nameof(BoardSpace.ResourcesTilePosition), new SyncedInt(null, null, tileId).SerializeData());
+    }
 
     private async Task ToggleTileWaterStatus(ICoordinate2d tileCoordinate, Action onCompletion = null)
     {
@@ -179,30 +216,57 @@ public partial class TTRenderer_Editor
         return;
     }
     
-    // --- Editor menu actions ---
+    // Initial Placement
+    private async Task CreateInitialPlacement(int boardSpaceId, Action onCompletion = null)
+    {
+        try
+        {
+            int placementObjId = await CreateEntity<UnitPlacement>();
+            UnitPlacement placementObj = GameState.GetEntity<UnitPlacement>(placementObjId);
+            await EditValue(placementObjId, nameof(placementObj.BoardSpaceId), placementObj.BoardSpaceId.SerializeData());
+            onCompletion?.Invoke();
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Log($"Rename Cancelled");
+        }
+    }
+    
+    
+    
+    // --- Editor menu actions --------------------------------------------------------------------
 
     public void Quicksave(Action onCompletion = null)
     {
-        string json = GameStateSaver.SerializeGameStae(GameState);
-        GameStateSaver.SaveToFile("scenarios/save.json", json);
+        var serialized = GameStateSaver.SerializeGameStae(GameState, prettyPrint: true);
+        
+        GameStateSaver.SaveToFile("scenarios/quicksave.json", serialized);
         onCompletion?.Invoke();
     }
 
     public void Quickload(Action onCompletion = null)
     {
-        string json = GameStateSaver.LoadFromFile("scenarios/save.json");
-        string[] chunks = Utils.ChunkString(json, 1100);
-        for (int i = 0; i < chunks.Length; i++)
+        string json = GameStateSaver.LoadFromFile("scenarios/quicksave.json");
+        List<string> chunks = new List<string>();
+        foreach (var chunk in Utils.ChunkString(json, 1100))
+            chunks.Add(chunk);
+        
+        for (int i = 0; i < chunks.Count; i++)
         {
             string chunk = chunks[i];
             Client.SendRequest(Client.ConnectedServer, new ImportGameStatePacket(
                 part: i,
-                numParts: chunks.Length,
+                numParts: chunks.Count,
                 json: chunk,
                 editorAuthKey: editorAuthKey
                 ));
         }
         onCompletion?.Invoke();
+    }
+
+    public void StartGame(Action onCompletion = null)
+    {
+        TTUtils.StartGameDefault(gameState:GameState);
     }
 
 }

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using TT2026.libraries.Izzy;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Actions;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
@@ -15,6 +16,7 @@ public abstract class GameState
     public static Dictionary<string, Type> KnownEntityTypes = new();
     public static Dictionary<string, Type> KnownBehaviorTypes = new();
     public static Dictionary<string, Type> KnownPlayerActionTypes = new();
+    public static Dictionary<string, Type> KnownGameStartInfoTypes = new();
     public static HashSet<Assembly> LoadedAssemblies = new();
     public static void LoadTypesFromCurrentAssembly()
     {
@@ -35,6 +37,7 @@ public abstract class GameState
         LoadTypeInto<GameEntity>(KnownEntityTypes);
         LoadTypeInto<GameBehavior>(KnownBehaviorTypes);
         LoadTypeInto<IPlayerAction>(KnownPlayerActionTypes);
+        LoadTypeInto<IGameStartInfo>(KnownGameStartInfoTypes);
         LoadedAssemblies.Add(assembly);
     }
     
@@ -63,7 +66,7 @@ public abstract class GameState
 
     public GameEntity GetEntity(int id)
     {
-        if (id == -1) return null;
+        if (id < 0 && id > -100) return null;
         return EntitiesById[id];
     }
     
@@ -77,6 +80,11 @@ public abstract class GameState
     public IEnumerable<T> GetEntitiesOfType<T>() where T : GameEntity
     {
         foreach (var entity in EntitiesByType.Get(typeof(T))) yield return (T)entity;
+    }
+    
+    public IEnumerable<GameEntity> GetEntitiesOfType(Type type)
+    {
+        foreach (var entity in EntitiesByType.Get(type)) yield return entity;
     }
 
     public T GetGameBehavior<T>() where T : GameBehavior

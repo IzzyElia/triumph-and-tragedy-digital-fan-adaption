@@ -25,4 +25,5 @@ public enum NetworkResponseError
 {
     None = 0,
     Error = 1,
+    Timeout
 }

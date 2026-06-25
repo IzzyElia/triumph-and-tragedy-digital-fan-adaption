@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Godot;
 using TT2026.Game.Rendering;
 using TT2026.libraries.IzzysConsole.API;
@@ -12,24 +13,39 @@ public partial class DebuggingSetup : Node
 {
     [Export] private int _numClients;
     [Export] private int _port;
+
+    private static PackedScene _renderer = Factory.PlayerRenderer;
     
     private Client _client;
 
     public override void _Ready()
     {
-        CommandRegistry.Initialize();
-        GameState.LoadTypesFromCurrentAssembly();
+        SetupAsync();
+    }
+
+    private async Task SetupAsync()
+    {
+        try
+        {
+            CommandRegistry.Initialize();
+            GameState.LoadTypesFromCurrentAssembly();
         
-        if (_numClients == 0 || _port == 0)
-        {
-            throw new ArgumentException($"You might have forgotten to setup {nameof(DebuggingSetup)} in the inspector (some values at defaults)");
+            if (_numClients == 0 || _port == 0)
+            {
+                throw new ArgumentException($"You might have forgotten to setup {nameof(DebuggingSetup)} in the inspector (some values at defaults)");
+            }
+            var server = Factory.CreateServer(_port);
+            for (int i = 0; i < _numClients; i++)
+            {
+                _client = await Factory.CreateClientAndConnectLocally(_port, null);
+                _client.SetRenderer(_renderer, this.GetParent());
+                _client.Renderer.Name = $"Client {i} Renderer";
+                TTUtils.Quickload(_client);
+            }
         }
-        var server = Factory.CreateServer(_port);
-        for (int i = 0; i < _numClients; i++)
+        catch (Exception e)
         {
-            _client = Factory.CreateClientAndConnectLocally(_port, null);
-            _client.SetRenderer(Factory.EditorRenderer, this.GetParent());
-            _client.Renderer.Name = $"Client {i} Renderer";
+            Logger.Error(e.ToString());
         }
     }
 

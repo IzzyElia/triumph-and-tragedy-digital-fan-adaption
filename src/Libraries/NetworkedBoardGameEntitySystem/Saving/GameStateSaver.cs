@@ -34,7 +34,7 @@ public static class GameStateSaver
         }
     }
 
-    public static string SerializeGameStae(GameState gameState)
+    public static string SerializeGameStae(GameState gameState, bool prettyPrint = false)
     {
         lock (gameState.NetworkManager.Mutex)
         {
@@ -50,7 +50,10 @@ public static class GameStateSaver
                 }
             }
 
-            string json = JsonSerializer.Serialize(data);
+            string json = JsonSerializer.Serialize(data, new JsonSerializerOptions()
+            {
+                WriteIndented = prettyPrint
+            });
             return json;
         }
     }
@@ -84,6 +87,8 @@ public static class GameStateSaver
                 }
 
                 GameEntity entity = gameState.InstantiateGameEntity(type, id);
+                if (entity is GameBehavior behavior)
+                    gameState.GameBehaviors.Add(behavior.GetType(), behavior);
                 foreach ((string key, List<DataHistoryFrame> historyFrames) in entityData.Data)
                 {
                     foreach (var historyFrame in historyFrames)

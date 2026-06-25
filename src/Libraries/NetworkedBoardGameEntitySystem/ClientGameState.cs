@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TT2026.libraries.LiteNetLib_2._1._4.LiteNetLib;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Actions;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
@@ -21,6 +22,25 @@ public class ClientGameState : GameState
     public ClientGameState(Client client)
     {
         Client = client;
+    }
+
+    public async Task<bool> TrySetPlayerSlot(int desiredPlayerId)
+    {
+        if (Client.ConnectedServer is null) return false;
+        NetworkResponse response = await Client.SendRequestAwaitCallback(Client.ConnectedServer,
+            new RequestPlayerPositionPacket()
+            {
+                RequestedPlayerId = desiredPlayerId,
+            });
+        if (response.Error == NetworkResponseError.None)
+        {
+            PlayerId = desiredPlayerId;
+            Renderer?.EntitiesChanged.Add(Constants.GameStateChangePlayerSignalId);
+            Logger.Log($"Successfully set client to player {desiredPlayerId}");
+            return true;
+        } 
+        Logger.Log($"Failed to set client to player {desiredPlayerId}");
+        return false;
     }
     
     public EntityUpdatePacketApplyError ApplyEntityUpdatePacket(EntityVariableUpdatePacket updatePacket)

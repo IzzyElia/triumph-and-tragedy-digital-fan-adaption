@@ -5,6 +5,12 @@ using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
 
 namespace TT2026.libraries.NetworkedBoardGameEntitySystem;
 
+public interface IEntityGameData
+{
+    public string Key { get; }
+    public string SerializeData();
+}
+
 public abstract class EntityGameData
 {
     private GameEntity _entity;

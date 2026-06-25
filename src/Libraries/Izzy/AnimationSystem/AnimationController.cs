@@ -6,7 +6,7 @@ namespace TT2026.libraries.Izzy.AnimationSystem;
 public class AnimationController
 {
     // Animations System
-    // Basically, we can queue up animations, which are called one at a time if queued with queue animation,
+    // Basically, we can queue up animations, which are called one at a time if queued with QueueAnimation(),
     // or simultaneously if added with InstantlyTriggerAnimation
     
     // For more info on how this world, see WorldAnimation.cs

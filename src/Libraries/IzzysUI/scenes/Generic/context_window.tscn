@@ -1,10 +1,10 @@
 [gd_scene load_steps=6 format=3 uid="uid://bxhldg3rpedfh"]
 
-[ext_resource type="Script" uid="uid://cm4itr34hfmf0" path="res://src/libraries/IzzysUI/src/Tooltips/ContextWindowController.cs" id="1_7t0gt"]
-[ext_resource type="PackedScene" uid="uid://dirh72lyyk775" path="res://src/libraries/IzzysUI/scenes/Generic/further_reading.tscn" id="1_8yrs1"]
-[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://src/libraries/IzzysUI/LabelSettings.tres" id="1_lpgv1"]
-[ext_resource type="PackedScene" uid="uid://m20mep2qxn2j" path="res://src/libraries/IzzysUI/scenes/Generic/tooltip_action.tscn" id="2_17734"]
-[ext_resource type="PackedScene" uid="uid://th62akw7crux" path="res://src/libraries/IzzysUI/scenes/Generic/stat_display.tscn" id="3_2kfdy"]
+[ext_resource type="Script" uid="uid://cm4itr34hfmf0" path="res://src/Libraries/IzzysUI/src/Tooltips/ContextWindowController.cs" id="1_7t0gt"]
+[ext_resource type="PackedScene" uid="uid://dirh72lyyk775" path="res://src/Libraries/IzzysUI/scenes/Generic/further_reading.tscn" id="1_8yrs1"]
+[ext_resource type="LabelSettings" uid="uid://c3lw2mwm3tflk" path="res://src/Libraries/IzzysUI/LabelSettings.tres" id="1_lpgv1"]
+[ext_resource type="PackedScene" uid="uid://m20mep2qxn2j" path="res://src/Libraries/IzzysUI/scenes/Generic/tooltip_action.tscn" id="2_17734"]
+[ext_resource type="PackedScene" uid="uid://th62akw7crux" path="res://src/Libraries/IzzysUI/scenes/Generic/stat_display.tscn" id="3_2kfdy"]
 
 [node name="ContextMenu" type="HBoxContainer" node_paths=PackedStringArray("MainContainer", "HeaderText", "MainText", "ActionsContainer", "FurtherReadingContainer", "StatContainer")]
 offset_right = 40.0
@@ -41,6 +41,13 @@ text = "CONTEXT MENU"
 label_settings = ExtResource("1_lpgv1")
 autowrap_mode = 2
 
+[node name="Information" type="Label" parent="PanelContainer/VSplitContainer/PanelContainer/VBoxContainer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "This is a context menu :)) Pretty rad right? It can show all sorts of cool stuff"
+label_settings = ExtResource("1_lpgv1")
+autowrap_mode = 2
+
 [node name="Stats" type="VBoxContainer" parent="PanelContainer/VSplitContainer/PanelContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -68,13 +75,6 @@ layout_mode = 2
 
 [node name="Tooltip Action5" parent="PanelContainer/VSplitContainer/PanelContainer/VBoxContainer/Actions Container" instance=ExtResource("2_17734")]
 layout_mode = 2
-
-[node name="Information" type="Label" parent="PanelContainer/VSplitContainer/PanelContainer/VBoxContainer"]
-custom_minimum_size = Vector2(250, 0)
-layout_mode = 2
-text = "This is a context menu :)) Pretty rad right? It can show all sorts of cool stuff"
-label_settings = ExtResource("1_lpgv1")
-autowrap_mode = 2
 
 [node name="Links Container" type="VBoxContainer" parent="."]
 layout_mode = 2

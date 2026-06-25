@@ -11,3 +11,15 @@ public class Link<T> : ITooltipLink where T : ILinkable
         _target = target;
     }
 }
+
+public class Link : ITooltipLink
+{
+    private ILinkable _target;
+    public string Label => _target.LinkName;
+    public ILinkable Target => _target;
+
+    public Link(ILinkable target)
+    {
+        _target = target;
+    }
+}

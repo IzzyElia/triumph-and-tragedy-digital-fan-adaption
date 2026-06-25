@@ -12,6 +12,7 @@ namespace TT2026.Game.Actions;
 
 public struct InitialPlacementAction : IPlacementAction
 {
+    private static HashSet<int> _addedBoardSpaces = new();
     public struct Placement
     {
         public int UnitNationId { get; set; }
@@ -34,18 +35,13 @@ public struct InitialPlacementAction : IPlacementAction
         if (placementBehavior == null) throw new InvalidOperationException($"Gamestate does not have {typeof(TTSyncronizationBehavior).Name} enabled");
         if (placementBehavior.PlayersPlaced.List.Contains(FactionId)) yield break;
 
-        foreach ((int i, Nation nation, var expectedPlacement) in IterateExpectedPlacements(gameState))
+        foreach ((int placementId, Nation nation, var expectedPlacement) in IterateExpectedPlacements(gameState))
         {
-            // Skip slots that already have a placement (keyed by nation + slot index).
-            if (Placements.Any(p => p.UnitNationId == nation.ID && p.InitialPlacementId == i))
-                continue;
-
-            // Expand ONLY this first unfilled slot. Because the slot order is
-            // deterministic, every complete placement set is reachable by exactly
-            // one path - no factorial duplicate orderings.
+            if (Placements.Any(x => x.InitialPlacementId == placementId)) continue;
+        
             foreach (var unitType in gameState.GetEntitiesOfType<UnitType>())
             {
-                if (!unitType.Definition.Value.MayBePlaced) continue; // keep Next in sync with Validate
+                if (!unitType.Definition.Value.MayBePlaced) continue;
                 yield return new InitialPlacementAction()
                 {
                     FactionId = FactionId,
@@ -55,13 +51,12 @@ public struct InitialPlacementAction : IPlacementAction
                         BoardSpaceId = expectedPlacement.BoardSpaceId,
                         UnitTypeId = unitType.ID,
                         UnitNationId = nation.ID,
-                        InitialPlacementId = i
+                        InitialPlacementId = placementId
                     }).ToArray(),
                 };
             }
-
-            yield break; // only the first unfilled slot is expanded per node
         }
+
     }
 
     // To ease validation, we allow any extra illegal placements to pass without issue,
@@ -122,12 +117,15 @@ public struct InitialPlacementAction : IPlacementAction
                     Unit unit = gameState.InstantiateGameEntity<Unit>();
                     unit.UnitTypeId.Value = placement.UnitTypeId;
                     unit.BoardSpaceId.Value = expectedPlacement.BoardSpaceId;
-                    unit.Pips.Value = expectedPlacement.StartingPips;
+                    unit.Pips.Value = expectedPlacement.NumCadres;
                     unit.NationId.Value = nation.ID;
                     break;
                 }
             }
         }
+        var placementBehavior = gameState.GetGameBehavior<PlacementBehavior>();
+        placementBehavior.PlayersPlaced.List.Add(FactionId);
+        placementBehavior.CommitState();
     }
 
     public string StepDescription(GameState gameState)
@@ -142,7 +140,7 @@ public struct InitialPlacementAction : IPlacementAction
             return $"ERR in {nameof(InitialPlacementAction)}";
         try
         {
-            var numPips = nation.Definition.Value.InitialUnits[placement.InitialPlacementId].StartingPips;
+            int numPips = gameState.GetEntity<UnitPlacement>(placement.InitialPlacementId).StartingPips.Value;
             return $"Place {numPips} {nation.Definition.Value.AdjectiveName} {unitType.Definition.Value.PluralName} in {boardSpace.Name}";
         }
         catch (IndexOutOfRangeException)
@@ -159,16 +157,43 @@ public struct InitialPlacementAction : IPlacementAction
         }
     }
 
-    private IEnumerable<(int placementId, Nation nation, NationDefinition.InitialUnitDefinition expectedPlacement)>
-        IterateExpectedPlacements(GameState gameState)
+    public bool DuplicatesWith(IEnumerable<IPlayerAction> otherActions)
     {
-        var faction = gameState.GetEntity<Faction>(FactionId);
-        foreach (Nation nation in faction.GetControlledNations())
+        if (Placements.Length == 0) return false;
+        foreach (var action in otherActions)
         {
-            for (int i = 0; i < nation.Definition.Value.InitialUnits.Length; i++)
+            if (action is not InitialPlacementAction placementAction) continue;
+
+            var myPlacement = Placements[^1];
+            foreach (var otherPlacement in placementAction.Placements)
             {
-                yield return (i, nation, nation.Definition.Value.InitialUnits[i]);
+                if (otherPlacement.BoardSpaceId == myPlacement.BoardSpaceId
+                    && otherPlacement.UnitNationId == myPlacement.UnitNationId
+                    && otherPlacement.UnitTypeId == myPlacement.UnitTypeId) return true;
             }
         }
+        return false;
     }
+
+    private IEnumerable<(int placementId, Nation nation, InitialPlacement expectedPlacement)> IterateExpectedPlacements(GameState gameState)
+    {
+        foreach (UnitPlacement placement in gameState.GetEntitiesOfType<UnitPlacement>())
+        {
+            Nation nation = gameState.GetEntity<Nation>(placement.NationId.Value);
+            if (nation.FactionId.Value == -1 || nation.FactionId.Value != FactionId) continue;
+            yield return (placement.ID, nation, new InitialPlacement()
+            {
+                BoardSpaceId =  placement.BoardSpaceId.Value,
+                NationId = placement.NationId.Value,
+                NumCadres = placement.StartingPips.Value,
+            });
+        }
+    }
+}
+
+public struct InitialPlacement
+{
+    public int BoardSpaceId { get; set; }
+    public int NationId { get; set; }
+    public int NumCadres { get; set; }
 }

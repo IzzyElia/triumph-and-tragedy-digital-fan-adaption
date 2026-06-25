@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://6xmo0koah4vx"]
+
+[node name="MapLabel" type="Node3D"]
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0.16228122, 0)
+text = "Paris"

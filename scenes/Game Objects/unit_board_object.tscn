@@ -1,0 +1,74 @@
+[gd_scene load_steps=11 format=3 uid="uid://b8sxti0tx75u7"]
+
+[ext_resource type="Script" uid="uid://vtojmh2nwcv0" path="res://src/Game/Rendering/BoardObjects/UnitBoardObject.cs" id="1_1t1uy"]
+[ext_resource type="Shader" uid="uid://fsrrxvb6w6nv" path="res://shaders/unit_background.gdshader" id="2_010lh"]
+[ext_resource type="Texture2D" uid="uid://tgpsjwu0sw7c" path="res://icons/tank.png" id="3_mfe8f"]
+[ext_resource type="Shader" uid="uid://dwo40bi6p4goq" path="res://shaders/pip_bar.gdshader" id="4_hahk6"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_reb41"]
+lightmap_size_hint = Vector2i(7, 7)
+subdivide_width = 5
+subdivide_depth = 5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_reb41"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("2_010lh")
+shader_parameter/border_threshold = 0.4
+shader_parameter/vertex_drop_threshold = 0.315
+shader_parameter/background_color = Color(0.29, 0.29, 0.29, 1)
+shader_parameter/border_color = Color(0.72030944, 0.48171473, 0.41777357, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_3rx3e"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_21y7x"]
+resource_local_to_scene = true
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+albedo_texture = ExtResource("3_mfe8f")
+emission_enabled = true
+emission = Color(0.15759659, 0.61953884, 0.8920777, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_j888y"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dnmdn"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("4_hahk6")
+shader_parameter/max_pips = 4.0
+shader_parameter/actual_pips = 4.0
+shader_parameter/full_health_color = Color(0, 0.66924894, 0.071519114, 1)
+shader_parameter/min_health_color = Color(0.8129536, 0, 0.098184966, 1)
+
+[node name="UnitBoardObject" type="Node3D" node_paths=PackedStringArray("_backgroundMesh", "_iconMesh", "_pipsMesh")]
+script = ExtResource("1_1t1uy")
+_backgroundMesh = NodePath("Icon/Background")
+_iconMesh = NodePath("Icon/Background/Foreground/Icon")
+_pipsMesh = NodePath("Icon/Background/Foreground/Pips/Health Bar")
+
+[node name="Icon" type="Node3D" parent="."]
+
+[node name="Background" type="MeshInstance3D" parent="Icon"]
+sorting_offset = 100.0
+mesh = SubResource("QuadMesh_reb41")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("ShaderMaterial_reb41")
+
+[node name="Foreground" type="Node3D" parent="Icon/Background"]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
+
+[node name="Icon" type="MeshInstance3D" parent="Icon/Background/Foreground"]
+transform = Transform3D(0.9, 0, 0, 0, 0.7, 0, 0, 0, 1, 0, 0.1, 0.024)
+sorting_offset = 101.0
+mesh = SubResource("QuadMesh_3rx3e")
+skeleton = NodePath("../../../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_21y7x")
+
+[node name="Pips" type="Node3D" parent="Icon/Background/Foreground"]
+transform = Transform3D(1, 0, 0, 0, 0.2, 0, 0, 0, 1, 0, -0.4, 0.01)
+
+[node name="Health Bar" type="MeshInstance3D" parent="Icon/Background/Foreground/Pips"]
+mesh = SubResource("QuadMesh_j888y")
+skeleton = NodePath("../../../..")
+surface_material_override/0 = SubResource("ShaderMaterial_dnmdn")

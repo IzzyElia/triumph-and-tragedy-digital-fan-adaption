@@ -30,6 +30,7 @@ public abstract class NetworkPeer : INetEventListener
                 {
                     if (_deadRequests.Any()) _deadRequests.Clear();
                     _deadRequests.Add(request.CallbackId);
+                    request.TCS.TrySetResult(new NetworkResponse(callbackId: request.CallbackId, null, err: NetworkResponseError.Timeout));
                 }
             }
 
@@ -145,11 +146,13 @@ public abstract class NetworkPeer : INetEventListener
                     Logger.Log($"Received bad packet from client at {peer.Address}");
                     outgoingResponse = new NetworkResponse(jsonPacket.CallbackId, "Bad Packet", NetworkResponseError.Error);
                 }
+                /*
                 catch (Exception e)
                 {
                     Logger.Error(e.ToString());
                     outgoingResponse = new NetworkResponse(jsonPacket.CallbackId, "Unhandled Server Error", NetworkResponseError.Error);
                 }
+                */
                 if (outgoingResponse is not null) SendJsonPacket(peer, outgoingResponse, jsonPacket.CallbackId);
             }
 

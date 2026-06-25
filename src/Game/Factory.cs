@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Godot;
 using TT2026.Game.Behaviors;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem;
@@ -24,14 +25,18 @@ public static class Factory
     public static Server CreateServer(int port)
     {
         Server server = new Server(port);
-        server.GameState.SetEnabledGameBehaviors(typeof(TileOwnershipBehavior));
+        server.GameState.SetEnabledGameBehaviors(
+            typeof(TileOwnershipBehavior), 
+            typeof(FactionsBehavior),
+            typeof(PlacementBehavior),
+            typeof(TTSyncronizationBehavior));
         return server;
     }
 
-    public static Client CreateClientAndConnectLocally(int port, string password)
+    public static async Task<Client> CreateClientAndConnectLocally(int port, string password)
     {
         Client client = new Client();
-        client.Connect("localhost", port, password: password);
+        await client.Connect("localhost", port, password: password);
         return client;
     }
     

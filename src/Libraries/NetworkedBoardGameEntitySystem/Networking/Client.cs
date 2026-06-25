@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Godot;
 using TT2026.libraries.LiteNetLib_2._1._4.LiteNetLib;
+using TT2026.Libraries.NetworkedBoardGameEntitySystem;
 using TT2026.Libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Rendering;
 
@@ -17,6 +19,7 @@ public class Client : NetworkPeer
     public NetPeer ConnectedServer => _netManager.FirstPeer;
     private NetworkEventListener _listener;
     private NetManager _netManager;
+    private TaskCompletionSource<ConnectionState> _connectionTcs = new();
     
     public Client(bool forceCreateGameState = false)
     {
@@ -48,13 +51,21 @@ public class Client : NetworkPeer
         Connect(_lastConnection.address, _lastConnection.port, _lastConnection.password);
     }
 
-    public void Connect(string address, int port, string password)
+    public async Task<ConnectionState> Connect(string address, int port, string password)
     {
+        if (_netManager.FirstPeer is not null)
+        {
+            _netManager.FirstPeer.Disconnect();
+            if (_connectionTcs is not null)
+                await _connectionTcs.Task;
+        }
+        
         if (address == "localhost") address = "127.0.0.1";
         _lastConnection = (address, port, password);
         NetPeer peer = null;
         try
         {
+            _connectionTcs = new TaskCompletionSource<ConnectionState>(creationOptions: TaskCreationOptions.RunContinuationsAsynchronously);
             peer = _netManager.Connect(new IPEndPoint(IPAddress.Parse(address), port), key: password);
         }
         catch (FormatException)
@@ -65,9 +76,13 @@ public class Client : NetworkPeer
         if (peer is null)
         {
             Logger.Log($"Could not connect to {address}:{port}");
-            return;
+            return ConnectionState.Disconnected;
         }
         else Logger.Log("Client connecting to " + peer.Address + "...");
+        await _connectionTcs.Task;
+        var result = _connectionTcs.Task.Result;
+        _connectionTcs = null;
+        return result;
     }
 
     // Network Event Listener
@@ -85,6 +100,7 @@ public class Client : NetworkPeer
             case nameof(SetStepPacket):
                 SetStepPacket packet = JsonSerializer.Deserialize<SetStepPacket>(jsonPacket.Payload);
                 GameState.GameStepID = packet.GameStepId;
+                GameState.Renderer.EntitiesChanged.Add(Constants.GameStateAdvanceSignalId);
                 return null;
             
             case nameof(ResyncHeaderPacket):
@@ -111,16 +127,29 @@ public class Client : NetworkPeer
 
     public override void OnPeerConnected(NetPeer peer)
     {
+        if (_connectionTcs is null) // TODO Can this state even be reached (the task is null with an outgoing connection request?
+        {
+            peer.Disconnect();
+            return;
+        }
         GameState = new ClientGameState(client: this);
+        _connectionTcs.TrySetResult(peer.ConnectionState);
     }
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        
+        if (_connectionTcs is not null)
+        {
+            _connectionTcs.TrySetResult(ConnectionState.Disconnected);
+        }
     }
 
     public override void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
+        if (_connectionTcs is not null)
+        {
+            _connectionTcs.TrySetResult(ConnectionState.Disconnected);
+        }
     }
 
     public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)

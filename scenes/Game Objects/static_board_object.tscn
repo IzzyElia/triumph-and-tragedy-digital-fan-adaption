@@ -1,0 +1,47 @@
+[gd_scene load_steps=7 format=3 uid="uid://bshll6csw7uxa"]
+
+[ext_resource type="Script" uid="uid://dje7bsg32v7li" path="res://src/Game/Rendering/BoardObjects/StaticBoardObject.cs" id="1_lcp15"]
+[ext_resource type="Texture2D" uid="uid://ces18fqqwxras" path="res://icons/plain-circle.png" id="2_un3t1"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_ocigq"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gedu3"]
+resource_local_to_scene = true
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+albedo_texture = ExtResource("2_un3t1")
+
+[sub_resource type="QuadMesh" id="QuadMesh_0605f"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bndyl"]
+resource_local_to_scene = true
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+emission_enabled = true
+emission = Color(0.8035309, 0.100953646, 0.39749202, 1)
+emission_energy_multiplier = 5.0
+
+[node name="StaticBoardObject" type="Node3D" node_paths=PackedStringArray("BackgroundMesh", "IconMesh", "IconLabel")]
+script = ExtResource("1_lcp15")
+BackgroundMesh = NodePath("Background")
+IconMesh = NodePath("Background/Icon")
+IconLabel = NodePath("Background/Icon/Label3D")
+
+[node name="Background" type="MeshInstance3D" parent="."]
+sorting_offset = 100.0
+mesh = SubResource("QuadMesh_ocigq")
+surface_material_override/0 = SubResource("StandardMaterial3D_gedu3")
+
+[node name="Icon" type="MeshInstance3D" parent="Background"]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0.01)
+sorting_offset = 101.0
+mesh = SubResource("QuadMesh_0605f")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_bndyl")
+
+[node name="Label3D" type="Label3D" parent="Background/Icon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+sorting_offset = 102.0

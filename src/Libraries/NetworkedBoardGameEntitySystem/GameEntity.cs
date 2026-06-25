@@ -1,11 +1,20 @@
 using System;
 using System.Collections.Generic;
+using TT2026.libraries.IzzysUI.Tooltips;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.Networking;
 using TT2026.libraries.NetworkedBoardGameEntitySystem.SyncedDataTypes;
 
 namespace TT2026.libraries.NetworkedBoardGameEntitySystem;
 
-public abstract class GameEntity
+public interface IGameEntity
+{
+    public int ID { get; }
+    public GameState GameState { get; }
+    public void CommitState();
+    public void ForceSetValue(string variableName, string variableValue, int gameStepId);
+}
+
+public abstract class GameEntity : IGameEntity
 {
     public int ID { get; private set; }
     public GameState GameState { get; private set; }
