@@ -61,6 +61,15 @@ public class TTSyncronizationBehavior : TTGameBehavior
     {
         yield break;
     }
+
+    public void NewYear()
+    {
+        CurrentYear.Value++;
+        CurrentSeason.Value = (int)Season.NewYear;
+        CurrentSubphase.Value = (int)Subphase.YearStart;
+        
+        CommitState();
+    }
 }
 
 public struct TTPhaseData

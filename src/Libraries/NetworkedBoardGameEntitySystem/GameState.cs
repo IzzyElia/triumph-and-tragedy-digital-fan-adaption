@@ -77,6 +77,14 @@ public abstract class GameState
         return entity as T;
     }
 
+    public IEnumerable<T> GetEntitiesWithType<T>() where T : IGameEntity
+    {
+        foreach (var entity in EntitiesById.Values)
+        {
+            if (entity is T result) yield return result;
+        }
+    }
+
     public IEnumerable<T> GetEntitiesOfType<T>() where T : GameEntity
     {
         foreach (var entity in EntitiesByType.Get(typeof(T))) yield return (T)entity;

@@ -60,4 +60,23 @@ public class PlacementBehavior : TTGameBehavior
             }
         }
     }
+
+    public void OnFactionPlaced()
+    {
+        var syncBehavior = GetSyncronizationBehavior();
+        if (syncBehavior.GetPhaseData().Value.Season == Season.Setup)
+        {
+            bool allFactionsPlaced = true;
+            foreach (var faction in GameState.GetEntitiesOfType<Faction>())
+                if (!PlayersPlaced.List.Contains(faction.ID)) allFactionsPlaced = false;
+
+            if (allFactionsPlaced)
+            {
+                ((ServerGameState)GameState).AdvanceGamePhaseTicker();
+                syncBehavior.NewYear();
+            }
+        }
+        
+        CommitState();
+    }
 }

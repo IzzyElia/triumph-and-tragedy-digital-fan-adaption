@@ -12,7 +12,6 @@ namespace TT2026.Game.Actions;
 
 public struct InitialPlacementAction : IPlacementAction
 {
-    private static HashSet<int> _addedBoardSpaces = new();
     public struct Placement
     {
         public int UnitNationId { get; set; }
@@ -23,7 +22,7 @@ public struct InitialPlacementAction : IPlacementAction
 
     public int FactionId { get; set; }
     public Placement[] Placements { get; set; }
-    public int BoardSpaceId => Placements.Any() ? Placements.Last().BoardSpaceId : -1;
+    public int BoardSpaceId => Placements is { Length: > 0 } ? Placements[^1].BoardSpaceId : -1;
 
     [JsonIgnore] public IPlayerAction From { get; private set; }
     public IEnumerable<IPlayerAction> Next(GameState gameState)
@@ -32,7 +31,7 @@ public struct InitialPlacementAction : IPlacementAction
         if (faction == null) yield break;
 
         var placementBehavior = gameState.GetGameBehavior<PlacementBehavior>();
-        if (placementBehavior == null) throw new InvalidOperationException($"Gamestate does not have {typeof(TTSyncronizationBehavior).Name} enabled");
+        if (placementBehavior == null) throw new InvalidOperationException($"Gamestate does not have {typeof(PlacementBehavior).Name} enabled");
         if (placementBehavior.PlayersPlaced.List.Contains(FactionId)) yield break;
 
         foreach ((int placementId, Nation nation, var expectedPlacement) in IterateExpectedPlacements(gameState))
@@ -79,31 +78,36 @@ public struct InitialPlacementAction : IPlacementAction
         if (faction == null) return ActionValidationResult.Illegal;
         
         var placementBehavior = gameState.GetGameBehavior<PlacementBehavior>();
-        if (placementBehavior == null) throw new InvalidOperationException($"Gamestate does not have {typeof(TTSyncronizationBehavior).Name} enabled");
+        if (placementBehavior == null) throw new InvalidOperationException($"Gamestate does not have {typeof(PlacementBehavior).Name} enabled");
         if (placementBehavior.PlayersPlaced.List.Contains(FactionId)) return ActionValidationResult.Illegal;
-        
+
+        // Next() only ever appends placements, so any duplicate or bad-typed *matched*
+        //  placement is irreparable and must dominate as Illegal regardless of where it
+        //  appears. We therefore scan every slot before concluding Incomplete: Illegal
+        //  short-circuits, but a merely-unfilled slot only records the fact.
+        bool anyIncomplete = false;
         foreach ((int i, Nation nation, var expectedPlacement) in IterateExpectedPlacements(gameState))
         {
-            bool placementFound = false;
-            foreach (var placement in Placements.Where(x => x.UnitNationId == nation.ID))
+            int matchCount = 0;
+            foreach (var placement in Placements.Where(x =>
+                         x.UnitNationId == nation.ID
+                         && x.InitialPlacementId == i
+                         && x.BoardSpaceId == expectedPlacement.BoardSpaceId))
             {
                 var unitType = gameState.GetEntity<UnitType>(placement.UnitTypeId);
                 if (unitType is null) return ActionValidationResult.Illegal;
                 if (!unitType.Definition.Value.MayBePlaced) return ActionValidationResult.Illegal;
-                if (placement.InitialPlacementId != i) continue;
-                if (placement.BoardSpaceId != expectedPlacement.BoardSpaceId) continue;
-                
-                // Fail the validation if there are any duplicate valid placements
-                // I don't *think* you could cheat by exploiting that... but better
-                //  safe than sorry
-                if (placementFound) return ActionValidationResult.Illegal;
-                
-                placementFound = true;
+
+                matchCount++;
             }
-            if (!placementFound) return ActionValidationResult.Incomplete;
+
+            // Duplicate valid placements for the same slot can't be undone via Next, so
+            //  this node and all its descendants are Illegal.
+            if (matchCount > 1) return ActionValidationResult.Illegal;
+            if (matchCount == 0) anyIncomplete = true;
         }
 
-        return ActionValidationResult.Valid;
+        return anyIncomplete ? ActionValidationResult.Incomplete : ActionValidationResult.Valid;
     }
 
     public void ExecuteOn(ServerGameState gameState)
@@ -112,19 +116,23 @@ public struct InitialPlacementAction : IPlacementAction
         {
             foreach (var placement in Placements)
             {
-                if (placement.UnitNationId == nation.ID && placement.InitialPlacementId == i)
+                if (placement.UnitNationId == nation.ID
+                    && placement.InitialPlacementId == i
+                    && placement.BoardSpaceId == expectedPlacement.BoardSpaceId)
                 {
                     Unit unit = gameState.InstantiateGameEntity<Unit>();
                     unit.UnitTypeId.Value = placement.UnitTypeId;
                     unit.BoardSpaceId.Value = expectedPlacement.BoardSpaceId;
                     unit.Pips.Value = expectedPlacement.NumCadres;
                     unit.NationId.Value = nation.ID;
+                    unit.CommitState();
                     break;
                 }
             }
         }
         var placementBehavior = gameState.GetGameBehavior<PlacementBehavior>();
         placementBehavior.PlayersPlaced.List.Add(FactionId);
+        placementBehavior.OnFactionPlaced();
         placementBehavior.CommitState();
     }
 
@@ -136,41 +144,32 @@ public struct InitialPlacementAction : IPlacementAction
         var unitType = gameState.GetEntity<UnitType>(placement.UnitTypeId);
         var nation = gameState.GetEntity<Nation>(placement.UnitNationId);
         var boardSpace = gameState.GetEntity<BoardSpace>(placement.BoardSpaceId);
-        if (unitType is null || nation is null || boardSpace is null)
+        var unitPlacement = gameState.GetEntity<UnitPlacement>(placement.InitialPlacementId);
+        if (unitType is null || nation is null || boardSpace is null || unitPlacement is null)
             return $"ERR in {nameof(InitialPlacementAction)}";
-        try
-        {
-            int numPips = gameState.GetEntity<UnitPlacement>(placement.InitialPlacementId).StartingPips.Value;
-            return $"Place {numPips} {nation.Definition.Value.AdjectiveName} {unitType.Definition.Value.PluralName} in {boardSpace.Name}";
-        }
-        catch (IndexOutOfRangeException)
-        {
-            return $"ERR in {nameof(InitialPlacementAction)}";
-        }
+
+        int numPips = unitPlacement.StartingPips.Value;
+        return $"Place {numPips} {nation.Definition.Value.AdjectiveName} {unitType.Definition.Value.PluralName} in {boardSpace.Name}";
     }
 
     public IEnumerable<int> HighlightEntities(GameState gameState)
     {
-        foreach (var placement in Placements)
-        {
-            yield return placement.BoardSpaceId;
-        }
+        if (Placements.Length > 0) yield return Placements[^1].BoardSpaceId;
     }
 
     public bool DuplicatesWith(IEnumerable<IPlayerAction> otherActions)
     {
-        if (Placements.Length == 0) return false;
+        if (Placements is not { Length: > 0 }) return false;
+        var myPlacement = Placements[^1];
         foreach (var action in otherActions)
         {
             if (action is not InitialPlacementAction placementAction) continue;
-
-            var myPlacement = Placements[^1];
-            foreach (var otherPlacement in placementAction.Placements)
-            {
-                if (otherPlacement.BoardSpaceId == myPlacement.BoardSpaceId
-                    && otherPlacement.UnitNationId == myPlacement.UnitNationId
-                    && otherPlacement.UnitTypeId == myPlacement.UnitTypeId) return true;
-            }
+            if (placementAction.Placements is not { Length: > 0 }) continue;
+            var otherPlacement = placementAction.Placements[^1];
+            if (otherPlacement.BoardSpaceId == myPlacement.BoardSpaceId
+                && otherPlacement.UnitNationId == myPlacement.UnitNationId
+                && otherPlacement.UnitTypeId == myPlacement.UnitTypeId) return
+                true;
         }
         return false;
     }
@@ -180,6 +179,7 @@ public struct InitialPlacementAction : IPlacementAction
         foreach (UnitPlacement placement in gameState.GetEntitiesOfType<UnitPlacement>())
         {
             Nation nation = gameState.GetEntity<Nation>(placement.NationId.Value);
+            if (nation == null) continue;
             if (nation.FactionId.Value == -1 || nation.FactionId.Value != FactionId) continue;
             yield return (placement.ID, nation, new InitialPlacement()
             {

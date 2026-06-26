@@ -48,6 +48,7 @@ _iconMesh = NodePath("Icon/Background/Foreground/Icon")
 _pipsMesh = NodePath("Icon/Background/Foreground/Pips/Health Bar")
 
 [node name="Icon" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.26)
 
 [node name="Background" type="MeshInstance3D" parent="Icon"]
 sorting_offset = 100.0

@@ -25,6 +25,7 @@ public class BoardSpace : GameEntity
     public Nation OwnerNation => GameState.GetEntity<Nation>(NationId.Value);
     public Nation OccupierNation => OccupierId.Value == -1 ? OwnerNation?.Occupier : GameState.GetEntity<Nation>(OccupierId.Value);
     public CityType CityType => GameState.GetEntity<CityType>(CityTypeId.Value);
+    public bool IsLand() => TerrainType.Value == (int)Entities.TerrainType.Land || TerrainType.Value == (int)Entities.TerrainType.Strait;
 
     public BoardSpace() : base()
     {

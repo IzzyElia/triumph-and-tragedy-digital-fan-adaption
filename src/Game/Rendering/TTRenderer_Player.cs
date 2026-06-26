@@ -85,29 +85,28 @@ public partial class TTRenderer_Player : TTRenderer
     }
 
     protected override void RecalculatePotentialActions()
+    {
+        lock (Client.Mutex)
         {
-            lock (Client.Mutex)
+            HighlightSpaces.Clear();
+            potentialActions.Clear();
+            if (GameState is null) return;
+            
+            if (contemplatedAction?.Validate(GameState) == ActionValidationResult.Illegal)
             {
-                HighlightSpaces.Clear();
-                potentialActions.Clear();
-                if (GameState is null) return;
-                
-                if (contemplatedAction?.Validate(GameState) == ActionValidationResult.Illegal)
-                {
-                    contemplatedAction = null;
-                }
-                
-                foreach (var potentialAction in GameState.GetPlayerActions(GameState.PlayerId, contemplatedAction))
-                {
-                    if (potentialAction.DuplicatesWith(potentialActions)) continue;
-                    potentialActions.Add(potentialAction);
-                    foreach (var entityId in potentialAction.HighlightEntities(GameState))
-                        HighlightSpaces.Add(entityId);
-                }
+                contemplatedAction = null;
             }
-    
-            RefreshesNeeded.Add(RefreshType.Tiles);
+            
+            foreach (var potentialAction in GameState.GetPlayerActions(GameState.PlayerId, contemplatedAction))
+            {
+                potentialActions.Add(potentialAction);
+                foreach (var entityId in potentialAction.HighlightEntities(GameState))
+                    HighlightSpaces.Add(entityId);
+            }
         }
+
+        RefreshesNeeded.Add(RefreshType.Tiles);
+    }
     public void ContemplateAction(IPlayerAction action)
         {
             if (action?.Validate(GameState) == ActionValidationResult.Illegal)

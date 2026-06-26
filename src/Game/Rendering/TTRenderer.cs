@@ -6,7 +6,6 @@ using TT2026.Game.Definitions;
 using TT2026.Game.Entities;
 using TT2026.Game.Rendering.BoardObjects;
 using TT2026.libraries.Izzy.Geometry;
-using TT2026.libraries.Izzy.Utils;
 using TT2026.libraries.IzzysUI;
 using TT2026.libraries.IzzysUI.Tooltips;
 using TT2026.libraries.NetworkedBoardGameEntitySystem;
@@ -153,6 +152,7 @@ public abstract partial class TTRenderer : TilingGameRenderer
     }
     public virtual void UnitRefresh()
     {
+        Logger.Log($"Running Unit refresh");
         MatchRendererArray<Unit, UnitBoardObject>(
             dict: ref _unitRenderers, 
             instantiator: () => UnitBoardObject.Prefab.Instantiate<UnitBoardObject>()

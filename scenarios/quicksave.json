@@ -1541,7 +1541,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Germany\u0022,\u0022AdjectiveName\u0022:\u0022German\u0022,\u0022Tag\u0022:\u0022GER\u0022,\u0022Cores\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Germany\u0022,\u0022AdjectiveName\u0022:\u0022German\u0022,\u0022Tag\u0022:\u0022GER\u0022,\u0022MaxUnitPips\u0022:4,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -2201,7 +2201,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Italy\u0022,\u0022AdjectiveName\u0022:\u0022MISSING ADJECTIVE\u0022,\u0022Tag\u0022:\u0022MISSING TAG\u0022,\u0022Cores\u0022:[],\u0022InitialUnits\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Italy\u0022,\u0022AdjectiveName\u0022:\u0022Italian\u0022,\u0022Tag\u0022:\u0022ITA\u0022,\u0022MaxUnitPips\u0022:3,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -2768,7 +2768,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Britain\u0022,\u0022AdjectiveName\u0022:\u0022British\u0022,\u0022Tag\u0022:\u0022BRIT\u0022,\u0022Cores\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Britain\u0022,\u0022AdjectiveName\u0022:\u0022British\u0022,\u0022Tag\u0022:\u0022BRIT\u0022,\u0022MaxUnitPips\u0022:4,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -5156,7 +5156,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Hungary\u0022,\u0022AdjectiveName\u0022:\u0022MISSING ADJECTIVE\u0022,\u0022Tag\u0022:\u0022MISSING TAG\u0022,\u0022Cores\u0022:[],\u0022InitialUnits\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Hungary\u0022,\u0022AdjectiveName\u0022:\u0022Hungarian\u0022,\u0022Tag\u0022:\u0022HUNG\u0022,\u0022MaxUnitPips\u0022:3,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -5581,7 +5581,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Bulgaria\u0022,\u0022AdjectiveName\u0022:\u0022MISSING ADJECTIVE\u0022,\u0022Tag\u0022:\u0022MISSING TAG\u0022,\u0022Cores\u0022:[],\u0022InitialUnits\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Bulgaria\u0022,\u0022AdjectiveName\u0022:\u0022Bulgarian\u0022,\u0022Tag\u0022:\u0022BUL\u0022,\u0022MaxUnitPips\u0022:3,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -9152,7 +9152,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022India\u0022,\u0022AdjectiveName\u0022:\u0022MISSING ADJECTIVE\u0022,\u0022Tag\u0022:\u0022MISSING TAG\u0022,\u0022Cores\u0022:[],\u0022InitialUnits\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022India\u0022,\u0022AdjectiveName\u0022:\u0022Indian\u0022,\u0022Tag\u0022:\u0022INDIA\u0022,\u0022MaxUnitPips\u0022:3,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -9767,7 +9767,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Afghanistan\u0022,\u0022AdjectiveName\u0022:\u0022MISSING ADJECTIVE\u0022,\u0022Tag\u0022:\u0022MISSING TAG\u0022,\u0022Cores\u0022:[],\u0022InitialUnits\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Afghanistan\u0022,\u0022AdjectiveName\u0022:\u0022Afghan\u0022,\u0022Tag\u0022:\u0022AFG\u0022,\u0022MaxUnitPips\u0022:3,\u0022Cores\u0022:[]}"
         }
       ]
     }
@@ -12127,7 +12127,7 @@
       "Definition": [
         {
           "GameStepID": 0,
-          "Data": "{\u0022Name\u0022:\u0022Mongolia\u0022,\u0022AdjectiveName\u0022:\u0022MISSING ADJECTIVE\u0022,\u0022Tag\u0022:\u0022MISSING TAG\u0022,\u0022Cores\u0022:[],\u0022InitialUnits\u0022:[]}"
+          "Data": "{\u0022Name\u0022:\u0022Mongolia\u0022,\u0022AdjectiveName\u0022:\u0022Mongolian\u0022,\u0022Tag\u0022:\u0022MONG\u0022,\u0022MaxUnitPips\u0022:3,\u0022Cores\u0022:[]}"
         }
       ]
     }

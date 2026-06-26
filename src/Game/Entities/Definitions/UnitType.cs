@@ -49,6 +49,9 @@ public struct UnitTypeDefinition : ISyncable
     public int BaseMovement { get; set; }
     public bool AllowRebasing { get; set; }
     public bool IsConvoy { get; set; }
+    public bool AllowPlacementWithoutSupply { get; set; }
+    public bool AllowPlacementInOccupiedTerritory { get; set; }
+    public int MaxPerTile { get; set; }
     public bool MayBePlaced { get; set; }
 }
 
