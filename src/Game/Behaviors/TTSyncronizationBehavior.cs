@@ -66,7 +66,7 @@ public class TTSyncronizationBehavior : TTGameBehavior
     {
         CurrentYear.Value++;
         CurrentSeason.Value = (int)Season.NewYear;
-        CurrentSubphase.Value = (int)Subphase.YearStart;
+        CurrentSubphase.Value = (int)Subphase.Production;
         
         CommitState();
     }

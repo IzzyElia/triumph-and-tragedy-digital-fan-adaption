@@ -34,10 +34,18 @@ public struct InitialPlacementAction : IPlacementAction
         if (placementBehavior == null) throw new InvalidOperationException($"Gamestate does not have {typeof(PlacementBehavior).Name} enabled");
         if (placementBehavior.PlayersPlaced.List.Contains(FactionId)) yield break;
 
+        // Multiple UnitPlacement slots can share the same (nation, tile) — they are
+        //  functionally identical, so offering each one separately would produce
+        //  duplicate-looking children. We instead offer only the first unfilled slot
+        //  per (nation, tile) group, yielding exactly one child per unit type. This
+        //  keeps the action graph free of permutation duplicates (obsoleting the old
+        //  DuplicatesWith) while still reaching every distinct full placement.
+        var offeredGroups = new HashSet<(int nationId, int boardSpaceId)>();
         foreach ((int placementId, Nation nation, var expectedPlacement) in IterateExpectedPlacements(gameState))
         {
             if (Placements.Any(x => x.InitialPlacementId == placementId)) continue;
-        
+            if (!offeredGroups.Add((nation.ID, expectedPlacement.BoardSpaceId))) continue;
+
             foreach (var unitType in gameState.GetEntitiesOfType<UnitType>())
             {
                 if (!unitType.Definition.Value.MayBePlaced) continue;
@@ -155,23 +163,6 @@ public struct InitialPlacementAction : IPlacementAction
     public IEnumerable<int> HighlightEntities(GameState gameState)
     {
         if (Placements.Length > 0) yield return Placements[^1].BoardSpaceId;
-    }
-
-    public bool DuplicatesWith(IEnumerable<IPlayerAction> otherActions)
-    {
-        if (Placements is not { Length: > 0 }) return false;
-        var myPlacement = Placements[^1];
-        foreach (var action in otherActions)
-        {
-            if (action is not InitialPlacementAction placementAction) continue;
-            if (placementAction.Placements is not { Length: > 0 }) continue;
-            var otherPlacement = placementAction.Placements[^1];
-            if (otherPlacement.BoardSpaceId == myPlacement.BoardSpaceId
-                && otherPlacement.UnitNationId == myPlacement.UnitNationId
-                && otherPlacement.UnitTypeId == myPlacement.UnitTypeId) return
-                true;
-        }
-        return false;
     }
 
     private IEnumerable<(int placementId, Nation nation, InitialPlacement expectedPlacement)> IterateExpectedPlacements(GameState gameState)

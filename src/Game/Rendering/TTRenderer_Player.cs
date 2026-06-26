@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using TT2026.Game.Actions;
+using TT2026.Game.AI;
 using TT2026.Game.Entities;
 using TT2026.Game.Rendering.BoardObjects;
 using TT2026.libraries.Izzy.Geometry;
@@ -166,6 +167,18 @@ public partial class TTRenderer_Player : TTRenderer
             }
 
             return null;
+        }));
+        interactions.Add(new SimpleUIAction($"Pick Random Action", () =>
+        {
+            try
+            {
+                IPlayerAction action = new AiRandom().PickAction(GameState, GameState.PlayerId, int.MaxValue);
+                GameState.AttemptAction(action);
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.ToString());
+            }
         }));
         
         IzzysUIController.OpenContextWindow(new ContextWindowInfo(

@@ -20,5 +20,6 @@ public class Unit : GameEntity
     }
         
     public UnitType UnitType => GameState.GetEntity<UnitType>(UnitTypeId.Value);
-        
+    
+    public bool IsInBattle() => false;
 }
